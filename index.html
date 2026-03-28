@@ -576,7 +576,8 @@ function goTo(id) {
 document.querySelectorAll('[data-section]').forEach(l => l.addEventListener('click', () => goTo(l.dataset.section)));
 
 // ── Liturgical Calendar ───────────────────────────────────
-const ICS_URL = 'https://calendar.google.com/calendar/ical/ma7m909q4huvqedci3fbl1u6rg%40group.calendar.google.com/public/basic.ics';
+const ICS_RAW = 'https://calendar.google.com/calendar/ical/ma7m909q4huvqedci3fbl1u6rg%40group.calendar.google.com/public/basic.ics';
+const ICS_URL = 'https://corsproxy.io/?' + encodeURIComponent(ICS_RAW);
 const LITURGICAL_COLOR_MAP = {
   white:  '#f5f0e8', gold: '#d4af37', red: '#c0392b',
   green:  '#2e7d32', purple: '#6a1b9a', blue: '#1565c0',
