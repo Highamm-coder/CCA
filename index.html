@@ -86,6 +86,10 @@
   .nav-link.active { background: rgba(189,238,208,0.4); color: #15422e; border-right-color: #15422e; }
   .nav-link:not(.active):hover { background: #edeeed; }
 
+  /* Mobile bottom nav overrides */
+  .mob-nav { border-right: none !important; border-top: 3px solid transparent; }
+  .mob-nav.active { border-top-color: #15422e; background: rgba(189,238,208,0.3); }
+
   /* Scrollbar hide */
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -165,8 +169,8 @@
 <!-- ══════════════ APP ══════════════ -->
 <div id="app" class="min-h-screen flex" style="display:none">
 
-  <!-- SIDEBAR -->
-  <nav class="fixed left-0 top-0 h-full w-56 bg-surface-container-low flex flex-col py-6 z-50">
+  <!-- SIDEBAR (desktop only) -->
+  <nav class="fixed left-0 top-0 h-full w-56 bg-surface-container-low hidden md:flex flex-col py-6 z-50">
     <div class="px-5 mb-8">
       <img src="Christ+Church+Anglican-2.webp" alt="Christ Church Anglican" style="width:140px;mix-blend-mode:multiply;" class="mb-2"/>
       <p class="label-xs text-on-surface-variant">Sound Production</p>
@@ -196,19 +200,22 @@
   </nav>
 
   <!-- MAIN -->
-  <div class="flex-1 ml-56 flex flex-col min-h-screen">
+  <div class="flex-1 md:ml-56 flex flex-col min-h-screen">
 
     <!-- Top bar -->
-    <header class="glass fixed top-0 right-0 left-56 z-40 h-14 flex items-center justify-between px-8 shadow-sm">
-      <div class="flex items-center gap-4 min-w-0">
-        <span class="font-headline font-black text-primary tracking-widest uppercase text-sm flex-shrink-0">Sound Production</span>
-        <span class="text-outline-variant/60 flex-shrink-0">·</span>
-        <span id="header-date" class="label-xs text-on-surface-variant flex-shrink-0"></span>
+    <header class="glass fixed top-0 right-0 left-0 md:left-56 z-40 h-14 flex items-center justify-between px-4 md:px-8 shadow-sm">
+      <div class="flex items-center gap-2 md:gap-4 min-w-0">
+        <!-- Logo: mobile only -->
+        <img src="Christ+Church+Anglican-2.webp" alt="CCA" class="md:hidden h-6 flex-shrink-0" style="mix-blend-mode:multiply"/>
+        <!-- Desktop title -->
+        <span class="hidden md:inline font-headline font-black text-primary tracking-widest uppercase text-sm flex-shrink-0">Sound Production</span>
+        <span class="hidden md:inline text-outline-variant/60 flex-shrink-0">·</span>
+        <span id="header-date" class="hidden md:inline label-xs text-on-surface-variant flex-shrink-0"></span>
         <span id="header-time" class="label-xs text-on-surface-variant flex-shrink-0"></span>
         <div id="header-liturgical" class="hidden items-center gap-2 flex-shrink-0">
           <span class="text-outline-variant/60">·</span>
           <span id="header-liturgical-chip" class="inline-block w-2 h-2 rounded-full flex-shrink-0"></span>
-          <span id="header-liturgical-name" class="label-xs text-on-surface-variant"></span>
+          <span id="header-liturgical-name" class="label-xs text-on-surface-variant truncate max-w-[160px] md:max-w-none"></span>
         </div>
       </div>
       <!-- Edit / Save+Cancel controls -->
@@ -230,10 +237,10 @@
       </div>
     </header>
 
-    <main class="mt-14 pb-24">
+    <main class="mt-14 pb-24 md:pb-10">
 
       <!-- ══ RUN SHEET (OVERVIEW) ══ -->
-      <div id="section-overview" class="section active px-8 py-10 max-w-4xl mx-auto space-y-10">
+      <div id="section-overview" class="section active px-4 md:px-8 py-6 md:py-10 max-w-4xl mx-auto space-y-8 md:space-y-10">
 
         <!-- Headsets + Wireless -->
         <section class="space-y-4">
@@ -333,7 +340,7 @@
             <div class="w-2 h-2 bg-primary rounded-sm"></div>
             <h3 class="label-sm text-on-surface">Stage Inputs — 7 Channels</h3>
           </div>
-          <div class="bg-surface-container-low rounded-4xl p-2 table-scroll">
+          <div class="bg-surface-container-low rounded-4xl p-2 overflow-x-auto">
             <table class="w-full text-left border-separate border-spacing-2" style="min-width:480px">
               <thead>
                 <tr class="label-xs text-on-surface-variant">
@@ -365,7 +372,7 @@
       </div><!-- /overview -->
 
       <!-- ══ STAGE MAP ══ -->
-      <div id="section-stagemap" class="section px-8 py-10 max-w-4xl mx-auto">
+      <div id="section-stagemap" class="section px-4 md:px-8 py-6 md:py-10 max-w-4xl mx-auto">
         <div class="mb-6">
           <div class="flex items-center gap-2 mb-1">
             <div class="w-2 h-2 bg-primary rounded-sm"></div>
@@ -461,7 +468,7 @@
       </div>
 
       <!-- ══ SETTINGS ══ -->
-      <div id="section-settings" class="section px-8 py-10 max-w-2xl mx-auto space-y-10">
+      <div id="section-settings" class="section px-4 md:px-8 py-6 md:py-10 max-w-2xl mx-auto space-y-10">
         <div>
           <div class="flex items-center gap-2 mb-1">
             <div class="w-2 h-2 bg-primary rounded-sm"></div>
@@ -502,6 +509,27 @@
       </div>
 
     </main>
+
+    <!-- Mobile bottom nav (hidden on md+) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-outline-variant/20 flex items-stretch" style="padding-bottom: env(safe-area-inset-bottom)">
+      <a class="mob-nav nav-link active flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="overview">
+        <span class="material-symbols-outlined" style="font-size:22px">dashboard</span>
+        <span class="label-xs" style="font-size:0.55rem">Run Sheet</span>
+      </a>
+      <a class="mob-nav nav-link flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="stagemap">
+        <span class="material-symbols-outlined" style="font-size:22px">layers</span>
+        <span class="label-xs" style="font-size:0.55rem">Stage Map</span>
+      </a>
+      <a class="mob-nav nav-link flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="settings">
+        <span class="material-symbols-outlined" style="font-size:22px">manage_accounts</span>
+        <span class="label-xs" style="font-size:0.55rem">Settings</span>
+      </a>
+      <a onclick="doLogout()" class="mob-nav flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant nav-link">
+        <span class="material-symbols-outlined" style="font-size:22px">lock</span>
+        <span class="label-xs" style="font-size:0.55rem">Lock</span>
+      </a>
+    </nav>
+
   </div>
 </div><!-- /app -->
 
