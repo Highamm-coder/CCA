@@ -575,87 +575,146 @@ function goTo(id) {
 }
 document.querySelectorAll('[data-section]').forEach(l => l.addEventListener('click', () => goTo(l.dataset.section)));
 
-// ── Liturgical Calendar ───────────────────────────────────
-const ICS_URL = '/api/calendar';
-const LITURGICAL_COLOR_MAP = {
-  white:  '#f5f0e8', gold: '#d4af37', red: '#c0392b',
-  green:  '#2e7d32', purple: '#6a1b9a', blue: '#1565c0',
-  rose:   '#e91e8c', black: '#212121',
+// ── Liturgical Calendar (algorithmic — no network required) ──
+const LITURGICAL_COLORS = {
+  White:'#e8e0d0', Red:'#b33030', Purple:'#5b2d82',
+  Green:'#2d6a35', Rose:'#c2607a',
 };
 
-function parseIcsDate(str) {
-  // YYYYMMDD or YYYYMMDDTHHMMSSZ
-  const s = str.replace(/T.*/, '');
-  return new Date(
-    parseInt(s.slice(0,4)), parseInt(s.slice(4,6))-1, parseInt(s.slice(6,8))
-  );
+function getLiturgicalDay(date) {
+  const dow  = date.getDay();
+  const y    = date.getFullYear();
+  const ORDS = ['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth',
+                'Tenth','Eleventh','Twelfth','Thirteenth','Fourteenth','Fifteenth','Sixteenth',
+                'Seventeenth','Eighteenth','Nineteenth','Twentieth','Twenty-First','Twenty-Second',
+                'Twenty-Third','Twenty-Fourth','Twenty-Fifth','Twenty-Sixth','Twenty-Seventh'];
+  const WDAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  function add(d, n)  { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+  function dp(a, b)   { return Math.round((+a - +b) / 86400000); }
+  function same(a, b) { return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+
+  function computeEaster(yr) {
+    const a=yr%19,b=Math.floor(yr/100),c=yr%100,d=Math.floor(b/4),e=b%4;
+    const f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
+    const h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4;
+    const l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+    return new Date(yr, Math.floor((h+l-7*m+114)/31)-1, ((h+l-7*m+114)%31)+1);
+  }
+  function computeAdvent1(yr) {
+    const d25=new Date(yr,11,25); return add(d25, -(21+d25.getDay()));
+  }
+
+  // Easter-relative seasons (check current year then previous)
+  for (const ey of [y, y-1]) {
+    const E = computeEaster(ey);
+    const d = dp(date, E);
+
+    // Last Sunday after Epiphany (Sunday before Ash Wednesday)
+    if (d === -49 && dow === 0) return { name:'The Last Sunday after the Epiphany', color:'White' };
+    if (d < -46) continue;
+
+    if (d === -46) return { name:'Ash Wednesday', color:'Purple' };
+    if (d >= -45 && d <= -43)
+      return { name:`${WDAY[dow]} after Ash Wednesday`, color:'Purple' };
+
+    // Lent: Lent 1 Sunday through Saturday before Palm Sunday
+    if (d >= -42 && d <= -8) {
+      const wk  = Math.ceil((d + 43) / 7); // 1–5
+      const col = (wk===4 && dow===0) ? 'Rose' : 'Purple'; // Laetare Sunday
+      if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday of Lent`, color:col };
+      return { name:`${WDAY[dow]}, ${ORDS[wk-1]} Week of Lent`, color:'Purple' };
+    }
+
+    // Holy Week
+    const HW = {'-7':['Palm Sunday','Red'],'-6':['Monday in Holy Week','Red'],
+                '-5':['Tuesday in Holy Week','Red'],'-4':['Wednesday in Holy Week','Red'],
+                '-3':['Maundy Thursday','White'],'-2':['Good Friday','Red'],
+                '-1':['Holy Saturday','White']};
+    if (HW[d]) return { name:HW[d][0], color:HW[d][1] };
+
+    if (d === 0) return { name:'Easter Day', color:'White' };
+    if (d >= 1 && d <= 6)
+      return { name:`${WDAY[dow]} of Easter Week`, color:'White' };
+    if (d === 39) return { name:'Ascension Day', color:'White' };
+    if (d >= 7 && d <= 48) {
+      const wk = Math.floor(d/7) + 1;
+      if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday of Easter`, color:'White' };
+      return { name:`${WDAY[dow]}, ${ORDS[Math.floor(d/7)]||''} Week of Easter`, color:'White' };
+    }
+    if (d === 49) return { name:'The Day of Pentecost', color:'Red' };
+    if (d === 56) return { name:'Trinity Sunday', color:'White' };
+
+    // Ordinary time after Trinity
+    if (d > 56) {
+      const adv = computeAdvent1(ey);
+      if (dp(date, adv) < 0) {
+        const wk = Math.floor((d - 49) / 7);
+        if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday after Pentecost`, color:'Green' };
+        return { name:`${WDAY[dow]}, ${ORDS[wk-1]} Week after Pentecost`, color:'Green' };
+      }
+    }
+  }
+
+  // Advent
+  for (const ay of [y, y-1]) {
+    const adv = computeAdvent1(ay);
+    const d   = dp(date, adv);
+    if (d < 0 || d >= 28) continue;
+    const wk  = Math.floor(d / 7) + 1;
+    const col = (wk===3 && dow===0) ? 'Rose' : 'Purple';
+    if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday of Advent`, color:col };
+    return { name:`${WDAY[dow]}, ${ORDS[wk-1]} Week of Advent`, color:'Purple' };
+  }
+
+  // Christmas & Epiphany
+  for (const cy of [y, y-1]) {
+    const xmas = new Date(cy, 11, 25);
+    const dx   = dp(date, xmas);
+
+    if (dx === 0) return { name:'Christmas Day', color:'White' };
+    if (dx > 0 && dx <= 11) {
+      if (date.getMonth()===0 && date.getDate()===1) return { name:'Holy Name of Jesus', color:'White' };
+      const s1 = add(xmas, (7 - xmas.getDay()) % 7 || 7);
+      if (dow===0 && same(date,s1)) return { name:'The First Sunday of Christmas', color:'White' };
+      if (dow===0 && same(date, add(s1,7))) return { name:'The Second Sunday of Christmas', color:'White' };
+      return { name:'Christmastide', color:'White' };
+    }
+
+    const epiph = new Date(cy+1, 0, 6);
+    if (same(date, epiph)) return { name:'The Epiphany', color:'White' };
+
+    const de = dp(date, epiph);
+    if (de > 0 && de <= 56) {
+      const epDow   = epiph.getDay();
+      const baptism = add(epiph, epDow===0 ? 7 : 7-epDow);
+      if (same(date, baptism)) return { name:'The Baptism of Our Lord', color:'White' };
+      const db = dp(date, baptism);
+      if (db > 0) {
+        const wk = Math.floor(db/7) + 1;
+        if (dow===0) return { name:`The ${ORDS[wk-1]} Sunday of Epiphany`, color:'Green' };
+        const ww = Math.floor(db/7) + 2;
+        return { name:`${WDAY[dow]}, ${ORDS[ww-2]||ORDS[0]} Week of Epiphany`, color:'Green' };
+      }
+      return { name:`${WDAY[dow]} after the Epiphany`, color:'White' };
+    }
+  }
+
+  return null;
 }
 
-function todayYMD() {
-  const n = new Date();
-  return n.getFullYear()*10000 + (n.getMonth()+1)*100 + n.getDate();
-}
-
-function showLiturgicalDay(summary, colorName) {
-  const row  = document.getElementById('liturgical-row');
-  const chip = document.getElementById('liturgical-color-chip');
+function showLiturgicalDay() {
+  const row   = document.getElementById('liturgical-row');
+  const chip  = document.getElementById('liturgical-color-chip');
   const feast = document.getElementById('liturgical-feast');
   const label = document.getElementById('liturgical-color-label');
   if (!row) return;
-  feast.textContent = summary;
-  const col = colorName ? colorName.trim().toLowerCase() : '';
-  chip.style.background = LITURGICAL_COLOR_MAP[col] || '#888';
-  label.textContent = colorName ? colorName.trim() : '';
+  const result = getLiturgicalDay(new Date());
+  if (!result) return;
+  feast.textContent     = result.name;
+  chip.style.background = LITURGICAL_COLORS[result.color] || '#888';
+  label.textContent     = result.color;
   row.classList.remove('hidden');
-}
-
-async function fetchLiturgicalDay() {
-  try {
-    const resp = await fetch(ICS_URL);
-    if (!resp.ok) return;
-    const text = await resp.text();
-    const events = text.split('BEGIN:VEVENT').slice(1);
-    const now = new Date();
-    const todayNum = todayYMD();
-
-    for (const ev of events) {
-      const summaryMatch = ev.match(/^SUMMARY:(.+)$/m);
-      const descMatch    = ev.match(/^DESCRIPTION:(.+)$/m);
-      const dtStart      = ev.match(/^DTSTART(?:;[^:]+)?:(\d{8})/m);
-      const dtEnd        = ev.match(/^DTEND(?:;[^:]+)?:(\d{8})/m);
-      const rrule        = ev.match(/^RRULE:/m);
-
-      if (!summaryMatch || !dtStart) continue;
-
-      let startNum, endNum;
-
-      if (rrule) {
-        // Recurring yearly — compare only month+day
-        const s = dtStart[1];
-        const e = dtEnd ? dtEnd[1] : s;
-        const smd = parseInt(s.slice(4,8)); // MMDD
-        const emd = parseInt(e.slice(4,8));
-        const todayMD = (now.getMonth()+1)*100 + now.getDate();
-        if (todayMD < smd || todayMD > emd) continue;
-      } else {
-        startNum = parseInt(dtStart[1]);
-        endNum   = dtEnd ? parseInt(dtEnd[1]) : startNum;
-        if (todayNum < startNum || todayNum >= endNum) continue;
-      }
-
-      const summary = summaryMatch[1].replace(/\\n/g,' ').trim();
-      let colorName = '';
-      if (descMatch) {
-        const desc = descMatch[1];
-        const parts = desc.split('|');
-        if (parts.length > 0) colorName = parts[0].replace(/\\n/g,' ').trim();
-      }
-      showLiturgicalDay(summary, colorName);
-      return; // use first match
-    }
-  } catch (e) {
-    // CORS or network failure — silent
-  }
 }
 
 // ── Init ────────────────────────────────────────────────
@@ -664,7 +723,7 @@ function init() {
   buildInputsTable();
   renderOverview();
   loadNotes();
-  fetchLiturgicalDay();
+  showLiturgicalDay();
 }
 
 // ── Edit mode ────────────────────────────────────────────
