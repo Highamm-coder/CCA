@@ -605,10 +605,9 @@ function init() {
 function startEdit() {
   // Load current data into inputs
   const d = getData();
-  document.getElementById('f-type').value  = d.type  || '';
-  document.getElementById('f-date').value  = d.date  || '';
-  document.getElementById('f-date2').value = d.date  || '';
-  document.getElementById('f-time').value  = d.time  || '';
+  document.getElementById('f-type').value  = d.type || '';
+  document.getElementById('f-date2').value = d.date || '';
+  document.getElementById('f-time').value  = d.time || '';
   document.getElementById('f-headset1').value = d.hs1 || '';
   document.getElementById('f-headset2').value = d.hs2 || '';
   document.getElementById('f-w1').value = d.w1 || '';
