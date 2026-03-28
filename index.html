@@ -247,37 +247,27 @@
                   <span class="f-view val text-lg font-headline font-black text-primary" id="v-type">—</span>
                   <select class="f-edit font-headline font-bold text-primary" id="f-type" style="font-size:1rem">
                     <option value="">Select type…</option>
-                    <option>Regular Sunday</option>
-                    <option>High Mass</option>
                     <option>Morning Prayer</option>
-                    <option>Evensong</option>
-                    <option>Baptism</option>
-                    <option>Funeral</option>
-                    <option>Wedding</option>
-                    <option>Special Service</option>
+                    <option>Evening Prayer</option>
+                    <option>Sunday Eucharist</option>
                   </select>
-                </div>
-                <div>
-                  <p class="label-xs text-on-surface-variant mb-1">Date</p>
-                  <span class="f-view val" id="v-date">—</span>
-                  <input class="f-edit" type="date" id="f-date"/>
                 </div>
               </div>
               <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-primary-fixed rounded-full blur-3xl opacity-40 pointer-events-none"></div>
             </div>
 
-            <!-- Leads -->
+            <!-- Date & Time -->
             <div class="bg-primary-container rounded-4xl p-6 flex flex-col gap-4">
-              <span class="label-sm text-on-primary-container">Production Leads</span>
+              <span class="label-sm text-on-primary-container">Date &amp; Time</span>
               <div>
-                <p class="label-xs text-on-primary-container/70 mb-1">Worship Leader</p>
-                <span class="f-view val text-on-primary font-headline" id="v-wl">—</span>
-                <input class="f-edit" type="text" id="f-wl" placeholder="Name" style="background:#1e5038;color:#fff;border-bottom-color:#a0cfb4"/>
+                <p class="label-xs text-on-primary-container/70 mb-1">Date</p>
+                <span class="f-view val text-on-primary font-headline" id="v-date2">—</span>
+                <input class="f-edit" type="date" id="f-date2" style="background:#1e5038;color:#fff;border-bottom-color:#a0cfb4"/>
               </div>
               <div>
-                <p class="label-xs text-on-primary-container/70 mb-1">Sound Tech</p>
-                <span class="f-view val text-on-primary font-headline" id="v-st">—</span>
-                <input class="f-edit" type="text" id="f-st" placeholder="Name" style="background:#1e5038;color:#fff;border-bottom-color:#a0cfb4"/>
+                <p class="label-xs text-on-primary-container/70 mb-1">Time</p>
+                <span class="f-view val text-on-primary font-headline" id="v-time">—</span>
+                <input class="f-edit" type="time" id="f-time" style="background:#1e5038;color:#fff;border-bottom-color:#a0cfb4"/>
               </div>
             </div>
           </div>
@@ -615,10 +605,10 @@ function init() {
 function startEdit() {
   // Load current data into inputs
   const d = getData();
-  document.getElementById('f-type').value = d.type || '';
-  document.getElementById('f-date').value = d.date || '';
-  document.getElementById('f-wl').value   = d.wl   || '';
-  document.getElementById('f-st').value   = d.st   || '';
+  document.getElementById('f-type').value  = d.type  || '';
+  document.getElementById('f-date').value  = d.date  || '';
+  document.getElementById('f-date2').value = d.date  || '';
+  document.getElementById('f-time').value  = d.time  || '';
   document.getElementById('f-headset1').value = d.hs1 || '';
   document.getElementById('f-headset2').value = d.hs2 || '';
   document.getElementById('f-w1').value = d.w1 || '';
@@ -641,9 +631,8 @@ function cancelEdit() {
 function saveEdit() {
   const d = getData();
   d.type = document.getElementById('f-type').value;
-  d.date = document.getElementById('f-date').value;
-  d.wl   = document.getElementById('f-wl').value.trim();
-  d.st   = document.getElementById('f-st').value.trim();
+  d.date = document.getElementById('f-date2').value;
+  d.time = document.getElementById('f-time').value;
   d.hs1  = document.getElementById('f-headset1').value.trim();
   d.hs2  = document.getElementById('f-headset2').value.trim();
   d.w1   = document.getElementById('f-w1').value.trim();
@@ -676,10 +665,10 @@ function renderOverview() {
   };
 
   const dateStr = d.date ? new Date(d.date + 'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}) : '';
-  setVal('v-type', d.type);
-  setVal('v-date', dateStr);
-  setVal('v-wl',   d.wl);
-  setVal('v-st',   d.st);
+  const timeStr = d.time ? new Date('1970-01-01T' + d.time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+  setVal('v-type',  d.type);
+  setVal('v-date2', dateStr);
+  setVal('v-time',  timeStr);
   setVal('v-headset1', d.hs1);
   setVal('v-headset2', d.hs2);
   setVal('v-w1', d.w1);
@@ -727,9 +716,10 @@ function buildInputsTable() {
 function updatePill(d) {
   const pill = document.getElementById('header-pill');
   const txt  = document.getElementById('header-pill-text');
-  if (d.type || d.date) {
+  if (d.type || d.date || d.time) {
     const ds = d.date ? new Date(d.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
-    txt.textContent = [d.type, ds].filter(Boolean).join(' · ');
+    const ts = d.time ? new Date('1970-01-01T' + d.time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+    txt.textContent = [d.type, ds, ts].filter(Boolean).join(' · ');
     pill.classList.remove('hidden'); pill.classList.add('flex');
   } else {
     pill.classList.add('hidden'); pill.classList.remove('flex');
