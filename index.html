@@ -591,7 +591,8 @@ function getLiturgicalDay(date) {
   const WDAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
   function add(d, n)  { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
-  function dp(a, b)   { return Math.round((+a - +b) / 86400000); }
+  function noon(d)    { return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); }
+  function dp(a, b)   { return Math.round((+noon(a) - +noon(b)) / 86400000); }
   function same(a, b) { return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
 
   function computeEaster(yr) {
