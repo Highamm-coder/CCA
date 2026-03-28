@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sound Production | Christ Church Anglican</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0..1&display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "primary":                  "#15422e",
+          "on-primary":               "#ffffff",
+          "primary-container":        "#2e5a44",
+          "on-primary-container":     "#a0cfb4",
+          "primary-fixed":            "#bdeed0",
+          "secondary-container":      "#d2e8d9",
+          "on-secondary-container":   "#55695d",
+          "secondary-fixed":          "#d2e8d9",
+          "surface":                  "#f9f9f8",
+          "surface-container-lowest": "#ffffff",
+          "surface-container-low":    "#f3f4f3",
+          "surface-container":        "#edeeed",
+          "surface-container-high":   "#e7e8e7",
+          "surface-container-highest":"#e1e3e2",
+          "on-surface":               "#191c1c",
+          "on-surface-variant":       "#414943",
+          "outline-variant":          "#c1c9c1",
+          "error":                    "#ba1a1a",
+          "error-container":          "#ffdad6",
+        },
+        fontFamily: {
+          headline: ["Manrope", "sans-serif"],
+          body:     ["Inter", "sans-serif"],
+        },
+        borderRadius: {
+          DEFAULT: "0.125rem",
+          sm: "0.25rem", md: "0.375rem", lg: "0.5rem",
+          xl: "0.75rem", "2xl": "1rem", "3xl": "1.5rem", "4xl": "2rem",
+          full: "9999px",
+        },
+      },
+    },
+  };
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background: #f9f9f8; color: #191c1c; }
+  .font-headline { font-family: 'Manrope', sans-serif; }
+  .label-xs { font-family: 'Inter'; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+  .label-sm { font-family: 'Inter'; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-size: 20px; line-height: 1; }
+  .fill-icon { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+  /* Underline inputs */
+  .f-edit {
+    background: #e1e3e2; border: none; border-bottom: 2px solid transparent;
+    border-radius: 0.375rem 0.375rem 0 0; padding: 7px 10px 5px;
+    font-family: 'Inter'; font-size: inherit; color: #191c1c;
+    width: 100%; transition: background .15s, border-color .15s; outline: none;
+  }
+  .f-edit:focus { background: #fff; border-bottom-color: #15422e; }
+  .f-edit::placeholder { color: #717973; }
+  select.f-edit { cursor: pointer; }
+
+  /* Edit mode toggling */
+  .f-view  { display: block; }
+  .f-edit  { display: none; }
+  body.editing .f-view { display: none; }
+  body.editing .f-edit { display: block; }
+  body.editing #btn-edit  { display: none; }
+  body.editing #btn-save-row { display: flex; }
+  #btn-save-row { display: none; }
+
+  /* Glass topbar */
+  .glass { background: rgba(249,249,248,0.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+  /* Sections */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Sidebar nav */
+  .nav-link { transition: all .15s; border-right: 3px solid transparent; }
+  .nav-link.active { background: rgba(189,238,208,0.4); color: #15422e; border-right-color: #15422e; }
+  .nav-link:not(.active):hover { background: #edeeed; }
+
+  /* Scrollbar hide */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Tooltip */
+  #map-tooltip {
+    position: absolute; background: #fff; border-radius: 12px; padding: 12px 16px;
+    font-size: 0.78rem; pointer-events: none; z-index: 100; min-width: 160px;
+    box-shadow: 0 8px 32px rgba(21,66,46,0.12); opacity: 0; transition: opacity .15s;
+  }
+  #map-tooltip.show { opacity: 1; }
+  .hs { cursor: pointer; }
+  .hs:hover rect { opacity: .78; }
+
+  /* Value display */
+  .val { display: block; font-weight: 600; color: #191c1c; }
+  .val.empty { color: #717973; font-weight: 400; font-style: italic; }
+
+  /* ── iPad / Touch ───────────────────────────────────────── */
+  /* Prevent iOS Safari zoom on input focus (requires font-size >= 16px) */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* Remove tap highlight flash */
+  * { -webkit-tap-highlight-color: transparent; }
+
+  /* Instant tap response — no 300ms delay */
+  button, a, [data-section] { touch-action: manipulation; }
+
+  /* Momentum scroll on main content */
+  main { -webkit-overflow-scrolling: touch; }
+
+  /* Minimum tap target size */
+  .nav-link { min-height: 44px; display: flex; align-items: center; }
+  #btn-edit, #btn-save-row button { min-height: 44px; }
+
+  /* Table overflow on narrow screens */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Sidebar scrollable if content overflows */
+  nav { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="login-screen" class="fixed inset-0 z-[200] flex" style="display:flex">
+
+  <!-- Left: form -->
+  <div class="flex flex-col justify-center px-12 py-16 bg-surface w-full md:w-1/2 lg:w-2/5">
+    <div class="max-w-xs mx-auto w-full">
+      <img src="Christ+Church+Anglican-2.webp" alt="Christ Church Anglican" class="mb-8" style="width:220px;mix-blend-mode:multiply;"/>
+
+      <div class="mb-8">
+        <h2 class="font-headline font-black text-on-surface text-xl">Production Dashboard</h2>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="label-xs text-on-surface-variant block mb-2">Passcode</label>
+          <input id="pw-input" type="password" placeholder="Enter passcode" class="f-edit rounded-md" style="display:block" autocomplete="current-password"/>
+        </div>
+        <div id="login-error" class="hidden text-xs text-error font-medium">Incorrect passcode.</div>
+        <button onclick="doLogin()" class="w-full bg-primary text-on-primary font-headline font-bold text-sm tracking-wide py-3 rounded-full hover:opacity-90 transition-opacity">
+          Enter
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: image -->
+  <div class="hidden md:block flex-1 relative overflow-hidden">
+    <img src="CCA-2025-print+(70+of+136).webp" alt="" class="absolute inset-0 w-full h-full object-cover"/>
+  </div>
+
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app" class="min-h-screen flex" style="display:none">
+
+  <!-- SIDEBAR -->
+  <nav class="fixed left-0 top-0 h-full w-56 bg-surface-container-low flex flex-col py-6 z-50">
+    <div class="px-5 mb-8">
+      <img src="Christ+Church+Anglican-2.webp" alt="Christ Church Anglican" style="width:140px;mix-blend-mode:multiply;" class="mb-2"/>
+      <p class="label-xs text-on-surface-variant">Sound Production</p>
+    </div>
+
+    <div class="flex-1 px-2 space-y-0.5">
+      <a class="nav-link active flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant" data-section="overview">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span class="label-sm">Run Sheet</span>
+      </a>
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant" data-section="stagemap">
+        <span class="material-symbols-outlined">layers</span>
+        <span class="label-sm">Stage Map</span>
+      </a>
+    </div>
+
+    <div class="px-2 border-t border-outline-variant/30 pt-3 space-y-0.5">
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant" data-section="settings">
+        <span class="material-symbols-outlined">manage_accounts</span>
+        <span class="label-sm">Settings</span>
+      </a>
+      <a onclick="doLogout()" class="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant nav-link">
+        <span class="material-symbols-outlined">lock</span>
+        <span class="label-sm">Lock</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="flex-1 ml-56 flex flex-col min-h-screen">
+
+    <!-- Top bar -->
+    <header class="glass fixed top-0 right-0 left-56 z-40 h-14 flex items-center justify-between px-8 shadow-sm">
+      <div class="flex items-center gap-3">
+        <span class="font-headline font-black text-primary tracking-widest uppercase text-sm">Sound Production</span>
+        <span id="header-pill" class="hidden items-center gap-1.5 bg-secondary-container text-on-secondary-container label-xs px-3 py-1 rounded-full">
+          <span class="w-1.5 h-1.5 bg-primary rounded-full inline-block"></span>
+          <span id="header-pill-text"></span>
+        </span>
+      </div>
+      <!-- Edit / Save+Cancel controls -->
+      <div class="flex items-center gap-2">
+        <button id="btn-edit" onclick="startEdit()"
+          class="flex items-center gap-1.5 text-primary font-headline font-bold text-xs px-4 py-2 rounded-full hover:bg-secondary-container transition-colors">
+          <span class="material-symbols-outlined" style="font-size:16px">edit</span> Edit
+        </button>
+        <div id="btn-save-row" class="items-center gap-2">
+          <button onclick="cancelEdit()"
+            class="font-headline font-bold text-xs px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors">
+            Cancel
+          </button>
+          <button onclick="saveEdit()"
+            class="flex items-center gap-1.5 bg-primary text-on-primary font-headline font-bold text-xs px-5 py-2 rounded-full hover:opacity-90 transition-opacity">
+            <span class="material-symbols-outlined" style="font-size:16px">check</span> Save
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mt-14 pb-24">
+
+      <!-- ══ RUN SHEET (OVERVIEW) ══ -->
+      <div id="section-overview" class="section active px-8 py-10 max-w-4xl mx-auto space-y-10">
+
+        <!-- Service info -->
+        <section>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+            <!-- Service type + date -->
+            <div class="bg-surface-container-low rounded-4xl p-6 relative overflow-hidden">
+              <div class="flex items-center gap-2 mb-4">
+                <div class="w-2 h-2 bg-primary rounded-sm flex-shrink-0"></div>
+                <span class="label-sm text-on-surface-variant">Service</span>
+              </div>
+              <div class="space-y-3">
+                <div>
+                  <p class="label-xs text-on-surface-variant mb-1">Type</p>
+                  <span class="f-view val text-lg font-headline font-black text-primary" id="v-type">—</span>
+                  <select class="f-edit font-headline font-bold text-primary" id="f-type" style="font-size:1rem">
+                    <option value="">Select type…</option>
+                    <option>Regular Sunday</option>
+                    <option>High Mass</option>
+                    <option>Morning Prayer</option>
+                    <option>Evensong</option>
+                    <option>Baptism</option>
+                    <option>Funeral</option>
+                    <option>Wedding</option>
+                    <option>Special Service</option>
+                  </select>
+                </div>
+                <div>
+                  <p class="label-xs text-on-surface-variant mb-1">Date</p>
+                  <span class="f-view val" id="v-date">—</span>
+                  <input class="f-edit" type="date" id="f-date"/>
+                </div>
+              </div>
+              <div class="absolute -bottom-6 -right-6 w-32 h-32 bg-primary-fixed rounded-full blur-3xl opacity-40 pointer-events-none"></div>
+            </div>
+
+            <!-- Leads -->
+            <div class="bg-primary-container rounded-4xl p-6 flex flex-col gap-4">
+              <span class="label-sm text-on-primary-container">Production Leads</span>
+              <div>
+                <p class="label-xs text-on-primary-container/70 mb-1">Worship Leader</p>
+                <span class="f-view val text-on-primary font-headline" id="v-wl">—</span>
+                <input class="f-edit" type="text" id="f-wl" placeholder="Name" style="background:#1e5038;color:#fff;border-bottom-color:#a0cfb4"/>
+              </div>
+              <div>
+                <p class="label-xs text-on-primary-container/70 mb-1">Sound Tech</p>
+                <span class="f-view val text-on-primary font-headline" id="v-st">—</span>
+                <input class="f-edit" type="text" id="f-st" placeholder="Name" style="background:#1e5038;color:#fff;border-bottom-color:#a0cfb4"/>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Headsets + Wireless -->
+        <section class="space-y-4">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-primary rounded-sm"></div>
+            <h3 class="label-sm text-on-surface">Microphones</h3>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <!-- Headset 1 -->
+            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2 border-primary">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined text-primary" style="font-size:18px">headset_mic</span>
+                <span class="label-xs text-on-surface-variant">Headset 1 · Clergy</span>
+              </div>
+              <span class="f-view val" id="v-headset1">—</span>
+              <input class="f-edit" type="text" id="f-headset1" placeholder="Clergy name"/>
+            </div>
+
+            <!-- Headset 2 -->
+            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2 border-primary">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined text-primary" style="font-size:18px">headset_mic</span>
+                <span class="label-xs text-on-surface-variant">Headset 2 · Clergy</span>
+              </div>
+              <span class="f-view val" id="v-headset2">—</span>
+              <input class="f-edit" type="text" id="f-headset2" placeholder="Clergy name"/>
+            </div>
+
+            <!-- Wireless 1–4 -->
+            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2" style="border-color:#2e5a44">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined text-primary" style="font-size:18px">mic</span>
+                <span class="label-xs text-on-surface-variant">Wireless 1 · Podium / Reader</span>
+              </div>
+              <span class="f-view val" id="v-w1">—</span>
+              <input class="f-edit" type="text" id="f-w1" placeholder="Assigned person"/>
+            </div>
+
+            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2" style="border-color:#2e5a44">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined text-primary" style="font-size:18px">mic</span>
+                <span class="label-xs text-on-surface-variant">Wireless 2 · Announcements</span>
+              </div>
+              <span class="f-view val" id="v-w2">—</span>
+              <input class="f-edit" type="text" id="f-w2" placeholder="Assigned person"/>
+            </div>
+
+            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2" style="border-color:#2e5a44">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined text-primary" style="font-size:18px">mic</span>
+                <span class="label-xs text-on-surface-variant">Wireless 3 · Flexible</span>
+              </div>
+              <span class="f-view val" id="v-w3">—</span>
+              <input class="f-edit" type="text" id="f-w3" placeholder="Assigned person"/>
+            </div>
+
+            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2" style="border-color:#2e5a44">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined text-primary" style="font-size:18px">mic</span>
+                <span class="label-xs text-on-surface-variant">Wireless 4 · Flexible</span>
+              </div>
+              <span class="f-view val" id="v-w4">—</span>
+              <input class="f-edit" type="text" id="f-w4" placeholder="Assigned person"/>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Stage Inputs -->
+        <section class="space-y-4">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-primary rounded-sm"></div>
+            <h3 class="label-sm text-on-surface">Stage Inputs — 7 Channels</h3>
+          </div>
+          <div class="bg-surface-container-low rounded-4xl p-2 table-scroll">
+            <table class="w-full text-left border-separate border-spacing-2" style="min-width:480px">
+              <thead>
+                <tr class="label-xs text-on-surface-variant">
+                  <th class="px-5 py-3 w-12">CH</th>
+                  <th class="px-5 py-3 w-28">Location</th>
+                  <th class="px-5 py-3">Instrument / Role</th>
+                  <th class="px-5 py-3">Musician</th>
+                </tr>
+              </thead>
+              <tbody id="inputs-tbody" class="text-sm"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Notes -->
+        <section class="space-y-4">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-primary rounded-sm"></div>
+            <h3 class="label-sm text-on-surface">Notes</h3>
+          </div>
+          <textarea id="f-notes"
+            class="w-full bg-surface-container-low rounded-3xl p-6 resize-none min-h-[140px] font-body text-sm text-on-surface border-none outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            placeholder="Cues, reminders, anything the team needs to know…"
+            oninput="autoSaveNotes()"></textarea>
+          <p class="label-xs text-on-surface-variant">Auto-saved as you type.</p>
+        </section>
+
+      </div><!-- /overview -->
+
+      <!-- ══ STAGE MAP ══ -->
+      <div id="section-stagemap" class="section px-8 py-10 max-w-4xl mx-auto">
+        <div class="mb-6">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-2 h-2 bg-primary rounded-sm"></div>
+            <span class="label-sm text-on-surface-variant">Real-time Visualization</span>
+          </div>
+          <h2 class="font-headline font-black text-2xl text-on-surface">Sanctuary Stage Plot</h2>
+          <p class="text-on-surface-variant text-sm mt-1">Hover or tap any area to see the current assignment.</p>
+        </div>
+
+        <div class="bg-surface-container-low rounded-4xl p-6">
+          <div class="relative" id="stage-wrap">
+            <svg viewBox="0 0 680 460" class="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
+              <rect width="680" height="460" rx="12" fill="#f3f4f3"/>
+              <pattern id="grid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+                <circle cx="1" cy="1" r="1" fill="#c1c9c1" opacity=".4"/>
+              </pattern>
+              <rect width="680" height="460" fill="url(#grid)" rx="12"/>
+
+              <!-- CHOIR LOFT -->
+              <g class="hs" data-hs="choir">
+                <rect x="60" y="24" width="560" height="108" rx="10" fill="#2e5a44" opacity=".85"/>
+                <text x="340" y="66" text-anchor="middle" fill="#a0cfb4" font-family="Manrope" font-weight="800" font-size="15">CHOIR LOFT</text>
+                <text x="340" y="88" text-anchor="middle" fill="#bdeed0" font-family="Inter" font-size="12" id="map-choir-text">Inputs 6 &amp; 7</text>
+              </g>
+
+              <!-- STAGE PLATFORM -->
+              <rect x="120" y="118" width="440" height="248" rx="8" fill="#92400e" opacity=".72"/>
+              <text x="340" y="388" text-anchor="middle" fill="#d97706" font-family="Manrope" font-weight="700" font-size="11" opacity=".8">▲  Stairs  ▲</text>
+
+              <!-- PIANO -->
+              <g class="hs" data-hs="piano">
+                <rect x="14" y="188" width="106" height="78" rx="8" fill="#15422e" opacity=".85"/>
+                <text x="67" y="224" text-anchor="middle" fill="#a0cfb4" font-family="Manrope" font-weight="700" font-size="13">Piano</text>
+                <text x="67" y="244" text-anchor="middle" fill="#bdeed0" font-family="Inter" font-size="11" id="map-piano-text">Input 1</text>
+              </g>
+
+              <!-- ORGAN -->
+              <g class="hs" data-hs="organ">
+                <rect x="560" y="188" width="106" height="78" rx="8" fill="#15422e" opacity=".85"/>
+                <text x="613" y="224" text-anchor="middle" fill="#a0cfb4" font-family="Manrope" font-weight="700" font-size="13">Organ</text>
+                <text x="613" y="244" text-anchor="middle" fill="#bdeed0" font-family="Inter" font-size="11" id="map-organ-text">Input 5</text>
+              </g>
+
+              <!-- STAGE LEFT -->
+              <g class="hs" data-hs="input2">
+                <rect x="134" y="150" width="116" height="76" rx="6" fill="#78350f" opacity=".6" stroke="#fcd34d" stroke-width="1.5" stroke-dasharray="6,4"/>
+                <text x="192" y="184" text-anchor="middle" fill="#fef3c7" font-family="Manrope" font-weight="700" font-size="12">Stage Left</text>
+                <text x="192" y="203" text-anchor="middle" fill="#fcd34d" font-family="Inter" font-size="11" id="map-input2-text">Input 2</text>
+              </g>
+
+              <!-- ALTAR -->
+              <g class="hs" data-hs="altar">
+                <rect x="270" y="146" width="140" height="84" rx="8" fill="#a16207" opacity=".78"/>
+                <text x="340" y="181" text-anchor="middle" fill="#fef9c3" font-family="Manrope" font-weight="800" font-size="15">Altar</text>
+                <text x="340" y="202" text-anchor="middle" fill="#fcd34d" font-family="Inter" font-size="11" id="map-altar-text">Input 3</text>
+              </g>
+
+              <!-- PULPIT -->
+              <g class="hs" data-hs="pulpit">
+                <rect x="430" y="150" width="114" height="78" rx="6" fill="#1e40af" opacity=".82"/>
+                <text x="487" y="185" text-anchor="middle" fill="#bfdbfe" font-family="Manrope" font-weight="700" font-size="13">Pulpit</text>
+                <text x="487" y="205" text-anchor="middle" fill="#93c5fd" font-family="Inter" font-size="11" id="map-pulpit-text">Input 4</text>
+              </g>
+
+              <!-- HEADSET 1 -->
+              <g class="hs" data-hs="headset1">
+                <rect x="148" y="268" width="152" height="52" rx="8" fill="#064e3b" opacity=".88"/>
+                <text x="224" y="287" text-anchor="middle" fill="#6ee7b7" font-family="Inter" font-weight="700" font-size="9" letter-spacing="1">HEADSET 1</text>
+                <text x="224" y="307" text-anchor="middle" fill="#a7f3d0" font-family="Manrope" font-weight="700" font-size="12" id="map-headset1-name">—</text>
+              </g>
+
+              <!-- HEADSET 2 -->
+              <g class="hs" data-hs="headset2">
+                <rect x="314" y="268" width="152" height="52" rx="8" fill="#064e3b" opacity=".88"/>
+                <text x="390" y="287" text-anchor="middle" fill="#6ee7b7" font-family="Inter" font-weight="700" font-size="9" letter-spacing="1">HEADSET 2</text>
+                <text x="390" y="307" text-anchor="middle" fill="#a7f3d0" font-family="Manrope" font-weight="700" font-size="12" id="map-headset2-name">—</text>
+              </g>
+            </svg>
+
+            <div id="map-tooltip">
+              <div id="tt-title" class="font-headline font-bold text-primary text-sm mb-1.5"></div>
+              <div id="tt-body" class="text-on-surface-variant text-xs space-y-1"></div>
+            </div>
+          </div>
+
+          <div class="mt-5 flex flex-wrap gap-4 px-2">
+            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm bg-primary"></div><span class="label-xs text-on-surface-variant">Instruments</span></div>
+            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background:#a16207"></div><span class="label-xs text-on-surface-variant">Altar</span></div>
+            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background:#1e40af"></div><span class="label-xs text-on-surface-variant">Pulpit</span></div>
+            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background:#064e3b"></div><span class="label-xs text-on-surface-variant">Headsets</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SETTINGS ══ -->
+      <div id="section-settings" class="section px-8 py-10 max-w-2xl mx-auto space-y-10">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-2 h-2 bg-primary rounded-sm"></div>
+            <span class="label-sm text-on-surface-variant">Administration</span>
+          </div>
+          <h2 class="font-headline font-black text-2xl text-on-surface">Settings</h2>
+        </div>
+
+        <section class="space-y-4">
+          <h3 class="font-headline font-bold text-sm text-on-surface">Change Passcode</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">Current</label>
+              <input class="f-edit" type="password" id="pw-current" placeholder="Current" style="display:block"/>
+            </div>
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">New</label>
+              <input class="f-edit" type="password" id="pw-new" placeholder="New" style="display:block"/>
+            </div>
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">Confirm</label>
+              <input class="f-edit" type="password" id="pw-confirm" placeholder="Confirm" style="display:block"/>
+            </div>
+          </div>
+          <button onclick="changePassword()" class="bg-primary text-on-primary font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+            Update Passcode
+          </button>
+          <p id="pw-msg" class="text-sm font-medium hidden"></p>
+        </section>
+
+        <section class="space-y-3">
+          <h3 class="font-headline font-bold text-sm text-on-surface">Reset Service Data</h3>
+          <p class="text-on-surface-variant text-sm">Clears all current assignments. Passcode not affected.</p>
+          <button onclick="resetData()" class="bg-error-container text-error font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+            Clear Service Data
+          </button>
+        </section>
+      </div>
+
+    </main>
+  </div>
+</div><!-- /app -->
+
+<script>
+// ── Config ──────────────────────────────────────────────
+const KEY_PW   = 'cca_pw';
+const KEY_DATA = 'cca_data';
+const DEF_PW   = 'sunday';
+
+const LOCS      = ['Piano','Stage Left','Altar','Pulpit','Organ','Choir','Choir'];
+const DEF_ROLES = ['Lead Vocals','','','','','',''];
+
+const MAP_HS = {
+  choir:    { title:'Choir Loft',  rows:[['Input 6','i6r','i6m'],['Input 7','i7r','i7m']] },
+  piano:    { title:'Piano',       rows:[['Role','i1r'],['Musician','i1m']] },
+  organ:    { title:'Organ',       rows:[['Role','i5r'],['Musician','i5m']] },
+  input2:   { title:'Stage Left',  rows:[['Role','i2r'],['Musician','i2m']] },
+  altar:    { title:'Altar',       rows:[['Role','i3r'],['Musician','i3m']] },
+  pulpit:   { title:'Pulpit',      rows:[['Role','i4r'],['Musician','i4m']] },
+  headset1: { title:'Headset 1',   rows:[['Clergy','hs1']] },
+  headset2: { title:'Headset 2',   rows:[['Clergy','hs2']] },
+};
+
+// ── Auth ────────────────────────────────────────────────
+function getPassword() { return localStorage.getItem(KEY_PW) || DEF_PW; }
+
+function doLogin() {
+  const val = document.getElementById('pw-input').value;
+  const err = document.getElementById('login-error');
+  if (val === getPassword()) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    err.classList.add('hidden');
+    init();
+  } else {
+    err.classList.remove('hidden');
+  }
+}
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function doLogout() {
+  if (document.body.classList.contains('editing')) cancelEdit();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+}
+
+function changePassword() {
+  const cur = document.getElementById('pw-current').value;
+  const nw  = document.getElementById('pw-new').value;
+  const cf  = document.getElementById('pw-confirm').value;
+  const msg = document.getElementById('pw-msg');
+  if (cur !== getPassword()) { flash(msg,'Incorrect passcode.','text-error'); return; }
+  if (!nw)                   { flash(msg,'New passcode cannot be empty.','text-error'); return; }
+  if (nw !== cf)             { flash(msg,'Passcodes do not match.','text-error'); return; }
+  localStorage.setItem(KEY_PW, nw);
+  flash(msg,'Passcode updated.','text-primary');
+  ['pw-current','pw-new','pw-confirm'].forEach(id => document.getElementById(id).value = '');
+}
+
+function flash(el, text, cls) {
+  el.textContent = text;
+  el.className = `text-sm font-medium ${cls}`;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
+// ── Data ────────────────────────────────────────────────
+function getData() { try { return JSON.parse(localStorage.getItem(KEY_DATA)) || {}; } catch { return {}; } }
+function saveData(d) { localStorage.setItem(KEY_DATA, JSON.stringify(d)); }
+
+// ── Nav ─────────────────────────────────────────────────
+function goTo(id) {
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.section === id));
+  document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === 'section-' + id));
+  if (id === 'stagemap') renderStageMap();
+}
+document.querySelectorAll('[data-section]').forEach(l => l.addEventListener('click', () => goTo(l.dataset.section)));
+
+// ── Init ────────────────────────────────────────────────
+function init() {
+  buildInputsTable();
+  renderOverview();
+  loadNotes();
+}
+
+// ── Edit mode ────────────────────────────────────────────
+function startEdit() {
+  // Load current data into inputs
+  const d = getData();
+  document.getElementById('f-type').value = d.type || '';
+  document.getElementById('f-date').value = d.date || '';
+  document.getElementById('f-wl').value   = d.wl   || '';
+  document.getElementById('f-st').value   = d.st   || '';
+  document.getElementById('f-headset1').value = d.hs1 || '';
+  document.getElementById('f-headset2').value = d.hs2 || '';
+  document.getElementById('f-w1').value = d.w1 || '';
+  document.getElementById('f-w2').value = d.w2 || '';
+  document.getElementById('f-w3').value = d.w3 || '';
+  document.getElementById('f-w4').value = d.w4 || '';
+  for (let i = 1; i <= 7; i++) {
+    const re = document.getElementById(`f-i${i}r`);
+    const me = document.getElementById(`f-i${i}m`);
+    if (re) re.value = d[`i${i}r`] !== undefined ? d[`i${i}r`] : DEF_ROLES[i-1];
+    if (me) me.value = d[`i${i}m`] || '';
+  }
+  document.body.classList.add('editing');
+}
+
+function cancelEdit() {
+  document.body.classList.remove('editing');
+}
+
+function saveEdit() {
+  const d = getData();
+  d.type = document.getElementById('f-type').value;
+  d.date = document.getElementById('f-date').value;
+  d.wl   = document.getElementById('f-wl').value.trim();
+  d.st   = document.getElementById('f-st').value.trim();
+  d.hs1  = document.getElementById('f-headset1').value.trim();
+  d.hs2  = document.getElementById('f-headset2').value.trim();
+  d.w1   = document.getElementById('f-w1').value.trim();
+  d.w2   = document.getElementById('f-w2').value.trim();
+  d.w3   = document.getElementById('f-w3').value.trim();
+  d.w4   = document.getElementById('f-w4').value.trim();
+  for (let i = 1; i <= 7; i++) {
+    const re = document.getElementById(`f-i${i}r`);
+    const me = document.getElementById(`f-i${i}m`);
+    d[`i${i}r`] = re ? re.value.trim() : '';
+    d[`i${i}m`] = me ? me.value.trim() : '';
+  }
+  saveData(d);
+  document.body.classList.remove('editing');
+  renderOverview();
+  renderStageMap();
+  updatePill(d);
+}
+
+// ── Render Overview ──────────────────────────────────────
+function renderOverview() {
+  const d = getData();
+  updatePill(d);
+
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (val) { el.textContent = val; el.classList.remove('empty'); }
+    else     { el.textContent = '—'; el.classList.add('empty'); }
+  };
+
+  const dateStr = d.date ? new Date(d.date + 'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}) : '';
+  setVal('v-type', d.type);
+  setVal('v-date', dateStr);
+  setVal('v-wl',   d.wl);
+  setVal('v-st',   d.st);
+  setVal('v-headset1', d.hs1);
+  setVal('v-headset2', d.hs2);
+  setVal('v-w1', d.w1);
+  setVal('v-w2', d.w2);
+  setVal('v-w3', d.w3);
+  setVal('v-w4', d.w4);
+
+  // Inputs table — update view spans in place (don't rebuild, edit inputs live there)
+  for (let i = 1; i <= 7; i++) {
+    const role = d[`i${i}r`] !== undefined ? d[`i${i}r`] : DEF_ROLES[i-1];
+    const mus  = d[`i${i}m`] || '';
+    const rv = document.getElementById(`v-i${i}r`);
+    const mv = document.getElementById(`v-i${i}m`);
+    if (rv) { rv.textContent = role || 'Not set';      rv.classList.toggle('empty', !role); }
+    if (mv) { mv.textContent = mus  || 'Unassigned';   mv.classList.toggle('empty', !mus);  }
+  }
+}
+
+// ── Build stage inputs table (edit mode rows) ────────────
+function buildInputsTable() {
+  // We build the tbody with both view and edit cells
+  const d = getData();
+  const tbody = document.getElementById('inputs-tbody');
+  let rows = '';
+  for (let i = 1; i <= 7; i++) {
+    const role = d[`i${i}r`] !== undefined ? d[`i${i}r`] : DEF_ROLES[i-1];
+    const mus  = d[`i${i}m`] || '';
+    rows += `<tr class="bg-surface-container-lowest rounded-xl">
+      <td class="px-5 py-3 rounded-l-xl font-headline font-black text-primary text-sm">${String(i).padStart(2,'0')}</td>
+      <td class="px-5 py-3 label-xs text-on-surface-variant">${LOCS[i-1]}</td>
+      <td class="px-3 py-2">
+        <span class="f-view val ${role ? '' : 'empty'}" id="v-i${i}r">${esc(role) || 'Not set'}</span>
+        <input class="f-edit text-sm" type="text" id="f-i${i}r" value="${esc(role)}" placeholder="Role / Instrument"/>
+      </td>
+      <td class="px-3 py-2 rounded-r-xl">
+        <span class="f-view val ${mus ? '' : 'empty'}" id="v-i${i}m">${esc(mus) || 'Unassigned'}</span>
+        <input class="f-edit text-sm" type="text" id="f-i${i}m" value="${esc(mus)}" placeholder="Musician name"/>
+      </td>
+    </tr>`;
+  }
+  tbody.innerHTML = rows;
+}
+
+// ── Header pill ──────────────────────────────────────────
+function updatePill(d) {
+  const pill = document.getElementById('header-pill');
+  const txt  = document.getElementById('header-pill-text');
+  if (d.type || d.date) {
+    const ds = d.date ? new Date(d.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+    txt.textContent = [d.type, ds].filter(Boolean).join(' · ');
+    pill.classList.remove('hidden'); pill.classList.add('flex');
+  } else {
+    pill.classList.add('hidden'); pill.classList.remove('flex');
+  }
+}
+
+// ── Stage map ────────────────────────────────────────────
+function renderStageMap() {
+  const d = getData();
+  const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || '—'; };
+  s('map-headset1-name', d.hs1);
+  s('map-headset2-name', d.hs2);
+  s('map-piano-text',  d.i1m || d.i1r || 'Input 1');
+  s('map-organ-text',  d.i5m || d.i5r || 'Input 5');
+  s('map-input2-text', d.i2m || d.i2r || 'Input 2');
+  s('map-altar-text',  d.i3m || d.i3r || 'Input 3');
+  s('map-pulpit-text', d.i4m || d.i4r || 'Input 4');
+  s('map-choir-text',  [d.i6r, d.i7r].filter(Boolean).join(' & ') || 'Inputs 6 & 7');
+}
+
+const tooltip = document.getElementById('map-tooltip');
+document.getElementById('stage-wrap').addEventListener('mousemove', e => {
+  const hs = e.target.closest('[data-hs]');
+  if (!hs) { tooltip.classList.remove('show'); return; }
+  const cfg = MAP_HS[hs.dataset.hs]; if (!cfg) return;
+  const d = getData();
+  document.getElementById('tt-title').textContent = cfg.title;
+  document.getElementById('tt-body').innerHTML = cfg.rows.map(r => {
+    const val = r.length === 3 ? [d[r[1]], d[r[2]]].filter(Boolean).join(' · ') : d[r[1]];
+    return `<div><span class="text-on-surface-variant">${r[0]}: </span><span class="font-medium text-on-surface">${val ? esc(val) : '—'}</span></div>`;
+  }).join('');
+  const wrap = document.getElementById('stage-wrap').getBoundingClientRect();
+  let x = e.clientX - wrap.left + 14, y = e.clientY - wrap.top + 14;
+  if (x + 200 > wrap.width) x -= 210;
+  tooltip.style.left = Math.max(4, x) + 'px';
+  tooltip.style.top  = Math.max(4, y) + 'px';
+  tooltip.classList.add('show');
+});
+document.getElementById('stage-wrap').addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+
+// Touch support for stage map
+let _tooltipTimer;
+document.getElementById('stage-wrap').addEventListener('touchstart', e => {
+  const hs = e.target.closest('[data-hs]');
+  if (!hs) return;
+  e.preventDefault(); // stop scroll while interacting with map
+  clearTimeout(_tooltipTimer);
+  const touch = e.touches[0];
+  const cfg = MAP_HS[hs.dataset.hs]; if (!cfg) return;
+  const d = getData();
+  document.getElementById('tt-title').textContent = cfg.title;
+  document.getElementById('tt-body').innerHTML = cfg.rows.map(r => {
+    const val = r.length === 3 ? [d[r[1]], d[r[2]]].filter(Boolean).join(' · ') : d[r[1]];
+    return `<div><span style="color:#414943">${r[0]}: </span><span style="font-weight:600;color:#191c1c">${val ? esc(val) : '—'}</span></div>`;
+  }).join('');
+  const wrap = document.getElementById('stage-wrap').getBoundingClientRect();
+  let x = touch.clientX - wrap.left + 14, y = touch.clientY - wrap.top - 80;
+  if (x + 200 > wrap.width) x = touch.clientX - wrap.left - 210;
+  tooltip.style.left = Math.max(4, x) + 'px';
+  tooltip.style.top  = Math.max(4, y) + 'px';
+  tooltip.classList.add('show');
+  _tooltipTimer = setTimeout(() => tooltip.classList.remove('show'), 2500);
+}, { passive: false });
+
+document.getElementById('stage-wrap').addEventListener('touchmove', e => {
+  const hs = e.target.closest('[data-hs]');
+  if (hs) e.preventDefault(); // prevent page scroll while on a hotspot
+}, { passive: false });
+
+// ── Notes ─────────────────────────────────────────────────
+function loadNotes() { document.getElementById('f-notes').value = getData().notes || ''; }
+let _nt;
+function autoSaveNotes() {
+  clearTimeout(_nt);
+  _nt = setTimeout(() => { const d = getData(); d.notes = document.getElementById('f-notes').value; saveData(d); }, 500);
+}
+
+// ── Reset ────────────────────────────────────────────────
+function resetData() {
+  if (!confirm('Clear all service data?')) return;
+  const d = getData();
+  saveData({ notes: d.notes || '' });
+  buildInputsTable();
+  renderOverview();
+  renderStageMap();
+  updatePill({});
+}
+
+// ── Util ──────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
