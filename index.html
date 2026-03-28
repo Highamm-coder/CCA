@@ -251,6 +251,10 @@
               </div>
               <span class="f-view val" id="v-headset1">—</span>
               <input class="f-edit" type="text" id="f-headset1" placeholder="Clergy name"/>
+              <div class="mt-2">
+                <span class="f-view label-xs text-on-surface-variant/60" id="v-hs1rt"></span>
+                <input class="f-edit text-sm" type="text" id="f-hs1rt" placeholder="Routing (e.g. Ch 1)"/>
+              </div>
             </div>
 
             <!-- Headset 2 -->
@@ -261,6 +265,10 @@
               </div>
               <span class="f-view val" id="v-headset2">—</span>
               <input class="f-edit" type="text" id="f-headset2" placeholder="Clergy name"/>
+              <div class="mt-2">
+                <span class="f-view label-xs text-on-surface-variant/60" id="v-hs2rt"></span>
+                <input class="f-edit text-sm" type="text" id="f-hs2rt" placeholder="Routing (e.g. Ch 2)"/>
+              </div>
             </div>
 
             <!-- Wireless 1–4 -->
@@ -271,6 +279,10 @@
               </div>
               <span class="f-view val" id="v-w1">—</span>
               <input class="f-edit" type="text" id="f-w1" placeholder="Assigned person"/>
+              <div class="mt-2">
+                <span class="f-view label-xs text-on-surface-variant/60" id="v-w1rt"></span>
+                <input class="f-edit text-sm" type="text" id="f-w1rt" placeholder="Routing (e.g. Ch 3)"/>
+              </div>
             </div>
 
             <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2" style="border-color:#2e5a44">
@@ -280,6 +292,10 @@
               </div>
               <span class="f-view val" id="v-w2">—</span>
               <input class="f-edit" type="text" id="f-w2" placeholder="Assigned person"/>
+              <div class="mt-2">
+                <span class="f-view label-xs text-on-surface-variant/60" id="v-w2rt"></span>
+                <input class="f-edit text-sm" type="text" id="f-w2rt" placeholder="Routing (e.g. Ch 4)"/>
+              </div>
             </div>
 
             <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2" style="border-color:#2e5a44">
@@ -289,6 +305,10 @@
               </div>
               <span class="f-view val" id="v-w3">—</span>
               <input class="f-edit" type="text" id="f-w3" placeholder="Assigned person"/>
+              <div class="mt-2">
+                <span class="f-view label-xs text-on-surface-variant/60" id="v-w3rt"></span>
+                <input class="f-edit text-sm" type="text" id="f-w3rt" placeholder="Routing (e.g. Ch 5)"/>
+              </div>
             </div>
 
             <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2" style="border-color:#2e5a44">
@@ -298,6 +318,10 @@
               </div>
               <span class="f-view val" id="v-w4">—</span>
               <input class="f-edit" type="text" id="f-w4" placeholder="Assigned person"/>
+              <div class="mt-2">
+                <span class="f-view label-xs text-on-surface-variant/60" id="v-w4rt"></span>
+                <input class="f-edit text-sm" type="text" id="f-w4rt" placeholder="Routing (e.g. Ch 6)"/>
+              </div>
             </div>
 
           </div>
@@ -714,10 +738,16 @@ function startEdit() {
   const d = getData();
   document.getElementById('f-headset1').value = d.hs1 || '';
   document.getElementById('f-headset2').value = d.hs2 || '';
+  document.getElementById('f-hs1rt').value = d.hs1rt || '';
+  document.getElementById('f-hs2rt').value = d.hs2rt || '';
   document.getElementById('f-w1').value = d.w1 || '';
   document.getElementById('f-w2').value = d.w2 || '';
   document.getElementById('f-w3').value = d.w3 || '';
   document.getElementById('f-w4').value = d.w4 || '';
+  document.getElementById('f-w1rt').value = d.w1rt || '';
+  document.getElementById('f-w2rt').value = d.w2rt || '';
+  document.getElementById('f-w3rt').value = d.w3rt || '';
+  document.getElementById('f-w4rt').value = d.w4rt || '';
   for (let i = 1; i <= 7; i++) {
     const re  = document.getElementById(`f-i${i}r`);
     const me  = document.getElementById(`f-i${i}m`);
@@ -735,12 +765,18 @@ function cancelEdit() {
 
 function saveEdit() {
   const d = getData();
-  d.hs1  = document.getElementById('f-headset1').value.trim();
-  d.hs2  = document.getElementById('f-headset2').value.trim();
-  d.w1   = document.getElementById('f-w1').value.trim();
-  d.w2   = document.getElementById('f-w2').value.trim();
-  d.w3   = document.getElementById('f-w3').value.trim();
-  d.w4   = document.getElementById('f-w4').value.trim();
+  d.hs1   = document.getElementById('f-headset1').value.trim();
+  d.hs2   = document.getElementById('f-headset2').value.trim();
+  d.hs1rt = document.getElementById('f-hs1rt').value.trim();
+  d.hs2rt = document.getElementById('f-hs2rt').value.trim();
+  d.w1    = document.getElementById('f-w1').value.trim();
+  d.w2    = document.getElementById('f-w2').value.trim();
+  d.w3    = document.getElementById('f-w3').value.trim();
+  d.w4    = document.getElementById('f-w4').value.trim();
+  d.w1rt  = document.getElementById('f-w1rt').value.trim();
+  d.w2rt  = document.getElementById('f-w2rt').value.trim();
+  d.w3rt  = document.getElementById('f-w3rt').value.trim();
+  d.w4rt  = document.getElementById('f-w4rt').value.trim();
   for (let i = 1; i <= 7; i++) {
     const re  = document.getElementById(`f-i${i}r`);
     const me  = document.getElementById(`f-i${i}m`);
@@ -774,6 +810,13 @@ function renderOverview() {
   setVal('v-w2', d.w2);
   setVal('v-w3', d.w3);
   setVal('v-w4', d.w4);
+  const setRt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || ''; };
+  setRt('v-hs1rt', d.hs1rt);
+  setRt('v-hs2rt', d.hs2rt);
+  setRt('v-w1rt', d.w1rt);
+  setRt('v-w2rt', d.w2rt);
+  setRt('v-w3rt', d.w3rt);
+  setRt('v-w4rt', d.w4rt);
 
   // Inputs table — update view spans in place (don't rebuild, edit inputs live there)
   for (let i = 1; i <= 7; i++) {
