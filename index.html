@@ -156,10 +156,20 @@
           <label class="label-xs text-on-surface-variant block mb-2">Password</label>
           <input id="pw-input" type="password" placeholder="Password" class="f-edit rounded-md" style="display:block" autocomplete="current-password"/>
         </div>
+        <div id="confirm-pw-wrap" class="hidden">
+          <label class="label-xs text-on-surface-variant block mb-2">Confirm Password</label>
+          <input id="confirm-pw-input" type="password" placeholder="Confirm password" class="f-edit rounded-md" style="display:block" autocomplete="new-password"/>
+        </div>
         <div id="login-error" class="hidden text-xs text-error font-medium">Incorrect email or password.</div>
-        <button onclick="doLogin()" class="w-full bg-primary text-on-primary font-headline font-bold text-sm tracking-wide py-3 rounded-full hover:opacity-90 transition-opacity">
+        <div id="signup-error" class="hidden text-xs text-error font-medium"></div>
+        <div id="signup-success" class="hidden text-xs text-green-700 font-medium">Account created! Check your email to confirm, then sign in.</div>
+        <button id="auth-btn" onclick="doLogin()" class="w-full bg-primary text-on-primary font-headline font-bold text-sm tracking-wide py-3 rounded-full hover:opacity-90 transition-opacity">
           Sign In
         </button>
+        <p class="text-center text-xs text-on-surface-variant">
+          <span id="auth-toggle-text">Don't have an account?</span>
+          <button id="auth-toggle-btn" onclick="toggleAuthMode()" class="ml-1 text-primary font-semibold hover:underline">Create account</button>
+        </p>
       </div>
     </div>
   </div>
@@ -566,19 +576,34 @@ function showApp() {
   document.getElementById('login-error').classList.add('hidden');
   init();
 }
+let _authMode = 'login'; // 'login' | 'signup'
+
+function toggleAuthMode() {
+  _authMode = _authMode === 'login' ? 'signup' : 'login';
+  const isSignup = _authMode === 'signup';
+  document.getElementById('confirm-pw-wrap').classList.toggle('hidden', !isSignup);
+  document.getElementById('auth-btn').textContent = isSignup ? 'Create Account' : 'Sign In';
+  document.getElementById('auth-btn').onclick = isSignup ? doSignUp : doLogin;
+  document.getElementById('auth-toggle-text').textContent = isSignup ? 'Already have an account?' : "Don't have an account?";
+  document.getElementById('auth-toggle-btn').textContent = isSignup ? 'Sign in' : 'Create account';
+  ['login-error','signup-error','signup-success'].forEach(id => document.getElementById(id).classList.add('hidden'));
+}
+
 function showLogin() {
   if (document.body.classList.contains('editing')) cancelEdit();
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('pw-input').value = '';
   document.getElementById('email-input').value = '';
+  document.getElementById('confirm-pw-input').value = '';
+  if (_authMode !== 'login') toggleAuthMode();
 }
 
 async function doLogin() {
   const email = document.getElementById('email-input').value.trim();
   const pw    = document.getElementById('pw-input').value;
   const err   = document.getElementById('login-error');
-  const btn   = document.querySelector('button[onclick="doLogin()"]');
+  const btn   = document.getElementById('auth-btn');
   btn.disabled = true; btn.textContent = 'Signing in…';
   const { error } = await sb.auth.signInWithPassword({ email, password: pw });
   btn.disabled = false; btn.textContent = 'Sign In';
@@ -586,6 +611,24 @@ async function doLogin() {
   await loadRemoteData();
   subscribeRealtime();
   showApp();
+}
+
+async function doSignUp() {
+  const email = document.getElementById('email-input').value.trim();
+  const pw    = document.getElementById('pw-input').value;
+  const cf    = document.getElementById('confirm-pw-input').value;
+  const errEl = document.getElementById('signup-error');
+  const sucEl = document.getElementById('signup-success');
+  const btn   = document.getElementById('auth-btn');
+  errEl.classList.add('hidden'); sucEl.classList.add('hidden');
+  if (!email) { errEl.textContent = 'Please enter an email.'; errEl.classList.remove('hidden'); return; }
+  if (pw.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.classList.remove('hidden'); return; }
+  if (pw !== cf) { errEl.textContent = 'Passwords do not match.'; errEl.classList.remove('hidden'); return; }
+  btn.disabled = true; btn.textContent = 'Creating account…';
+  const { error } = await sb.auth.signUp({ email, password: pw });
+  btn.disabled = false; btn.textContent = 'Create Account';
+  if (error) { errEl.textContent = error.message; errEl.classList.remove('hidden'); return; }
+  sucEl.classList.remove('hidden');
 }
 
 async function doLogout() {
@@ -644,8 +687,8 @@ function subscribeRealtime() {
 }
 
 // Enter key on login fields
-['pw-input','email-input'].forEach(id =>
-  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
+['pw-input','email-input','confirm-pw-input'].forEach(id =>
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') (_authMode === 'signup' ? doSignUp : doLogin)(); }));
 
 // Restore session on page load
 sb.auth.getSession().then(async ({ data: { session } }) => {
