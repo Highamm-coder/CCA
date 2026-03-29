@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Sound Production | Christ Church Anglican</title>
+<title>Sound Production Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
@@ -65,6 +65,7 @@
   .f-edit:focus { background: #fff; border-bottom-color: #15422e; }
   .f-edit::placeholder { color: #717973; }
   select.f-edit { cursor: pointer; }
+  input[type="color"].f-edit { padding: 3px 6px; height: 38px; cursor: pointer; }
 
   /* Edit mode toggling */
   .f-view  { display: block; }
@@ -95,90 +96,85 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* Tooltip */
-  #map-tooltip {
-    position: absolute; background: #fff; border-radius: 12px; padding: 12px 16px;
-    font-size: 0.78rem; pointer-events: none; z-index: 100; min-width: 160px;
-    box-shadow: 0 8px 32px rgba(21,66,46,0.12); opacity: 0; transition: opacity .15s;
-  }
-  #map-tooltip.show { opacity: 1; }
-  .hs { cursor: pointer; }
-  .hs:hover rect { opacity: .78; }
-
   /* Value display */
   .val { display: block; font-weight: 600; color: #191c1c; }
   .val.empty { color: #717973; font-weight: 400; font-style: italic; }
 
-  /* ── iPad / Touch ───────────────────────────────────────── */
-  /* Prevent iOS Safari zoom on input focus (requires font-size >= 16px) */
+  /* ── iPad / Touch ── */
   input, select, textarea { font-size: 16px !important; }
-
-  /* Remove tap highlight flash */
   * { -webkit-tap-highlight-color: transparent; }
-
-  /* Instant tap response — no 300ms delay */
   button, a, [data-section] { touch-action: manipulation; }
-
-  /* Momentum scroll on main content */
   main { -webkit-overflow-scrolling: touch; }
-
-  /* Minimum tap target size */
   .nav-link { min-height: 44px; display: flex; align-items: center; }
   #btn-edit, #btn-save-row button { min-height: 44px; }
-
-  /* Table overflow on narrow screens */
   .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-  /* Sidebar scrollable if content overflows */
   nav { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 </style>
 </head>
 <body class="min-h-screen">
 
 <!-- ══════════════ LOGIN ══════════════ -->
-<div id="login-screen" class="fixed inset-0 z-[200] flex" style="display:flex">
+<div id="login-screen" class="fixed inset-0 z-[200] flex items-center justify-center bg-surface" style="display:flex">
+  <div class="w-full max-w-sm mx-auto px-8 py-12">
 
-  <!-- Left: form -->
-  <div class="flex flex-col justify-center px-12 py-16 bg-surface w-full md:w-1/2 lg:w-2/5">
-    <div class="max-w-xs mx-auto w-full">
-      <img src="Christ+Church+Anglican-2.webp" alt="Christ Church Anglican" class="mb-8" style="width:220px;mix-blend-mode:multiply;"/>
+    <div class="mb-8">
+      <h1 class="font-headline font-black text-primary text-2xl tracking-tight">Sound Production</h1>
+      <p class="text-on-surface-variant text-sm mt-1">Sign in to access your run sheet.</p>
+    </div>
 
-      <div class="mb-8">
-        <h2 class="font-headline font-black text-on-surface text-xl">Production Dashboard</h2>
+    <div class="space-y-4">
+      <div>
+        <label class="label-xs text-on-surface-variant block mb-2">Email</label>
+        <input id="email-input" type="email" placeholder="team@yourchurch.org" class="f-edit rounded-md" style="display:block" autocomplete="email"/>
       </div>
+      <div>
+        <label class="label-xs text-on-surface-variant block mb-2">Password</label>
+        <input id="pw-input" type="password" placeholder="Password" class="f-edit rounded-md" style="display:block" autocomplete="current-password"/>
+      </div>
+      <div id="confirm-pw-wrap" class="hidden">
+        <label class="label-xs text-on-surface-variant block mb-2">Confirm Password</label>
+        <input id="confirm-pw-input" type="password" placeholder="Confirm password" class="f-edit rounded-md" style="display:block" autocomplete="new-password"/>
+      </div>
+      <div id="login-error" class="hidden text-xs text-error font-medium">Incorrect email or password.</div>
+      <div id="signup-error" class="hidden text-xs text-error font-medium"></div>
+      <div id="signup-success" class="hidden text-xs text-green-700 font-medium">Account created! Check your email to confirm, then sign in.</div>
+      <button id="auth-btn" onclick="doLogin()" class="w-full bg-primary text-on-primary font-headline font-bold text-sm tracking-wide py-3 rounded-full hover:opacity-90 transition-opacity">
+        Sign In
+      </button>
+      <p class="text-center text-xs text-on-surface-variant">
+        <span id="auth-toggle-text">Don't have an account?</span>
+        <button id="auth-toggle-btn" onclick="toggleAuthMode()" class="ml-1 text-primary font-semibold hover:underline">Create account</button>
+      </p>
+    </div>
+  </div>
+</div>
 
-      <div class="space-y-4">
-        <div>
-          <label class="label-xs text-on-surface-variant block mb-2">Email</label>
-          <input id="email-input" type="email" placeholder="team@yourchurch.org" class="f-edit rounded-md" style="display:block" autocomplete="email"/>
-        </div>
-        <div>
-          <label class="label-xs text-on-surface-variant block mb-2">Password</label>
-          <input id="pw-input" type="password" placeholder="Password" class="f-edit rounded-md" style="display:block" autocomplete="current-password"/>
-        </div>
-        <div id="confirm-pw-wrap" class="hidden">
-          <label class="label-xs text-on-surface-variant block mb-2">Confirm Password</label>
-          <input id="confirm-pw-input" type="password" placeholder="Confirm password" class="f-edit rounded-md" style="display:block" autocomplete="new-password"/>
-        </div>
-        <div id="login-error" class="hidden text-xs text-error font-medium">Incorrect email or password.</div>
-        <div id="signup-error" class="hidden text-xs text-error font-medium"></div>
-        <div id="signup-success" class="hidden text-xs text-green-700 font-medium">Account created! Check your email to confirm, then sign in.</div>
-        <button id="auth-btn" onclick="doLogin()" class="w-full bg-primary text-on-primary font-headline font-bold text-sm tracking-wide py-3 rounded-full hover:opacity-90 transition-opacity">
-          Sign In
+<!-- ══════════════ WIZARD ══════════════ -->
+<div id="wizard-screen" class="fixed inset-0 z-[300] bg-surface flex items-start justify-center overflow-y-auto py-8 px-4" style="display:none">
+  <div id="wiz-card" class="bg-surface-container-lowest rounded-4xl shadow-lg w-full max-w-lg border-t-4 border-primary">
+    <div class="p-8">
+      <!-- Step indicators -->
+      <div class="flex items-center gap-2 mb-6">
+        <div id="wiz-dot-1" class="w-2 h-2 rounded-full bg-primary"></div>
+        <div id="wiz-dot-2" class="w-2 h-2 rounded-full bg-outline-variant"></div>
+        <div id="wiz-dot-3" class="w-2 h-2 rounded-full bg-outline-variant"></div>
+        <div id="wiz-dot-4" class="w-2 h-2 rounded-full bg-outline-variant"></div>
+        <span id="wiz-step-label" class="ml-2 label-xs text-on-surface-variant">Step 1 of 4</span>
+      </div>
+      <!-- Step content -->
+      <div id="wiz-content"></div>
+      <!-- Nav buttons -->
+      <div class="flex justify-between mt-8">
+        <button id="wiz-back" onclick="wizBack()" class="font-headline font-bold text-sm px-5 py-2.5 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors" style="display:none">
+          ← Back
         </button>
-        <p class="text-center text-xs text-on-surface-variant">
-          <span id="auth-toggle-text">Don't have an account?</span>
-          <button id="auth-toggle-btn" onclick="toggleAuthMode()" class="ml-1 text-primary font-semibold hover:underline">Create account</button>
-        </p>
+        <div></div>
+        <button id="wiz-next" onclick="wizNext()" class="bg-primary text-on-primary font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+          Next →
+        </button>
       </div>
     </div>
   </div>
-
-  <!-- Right: image -->
-  <div class="hidden md:block flex-1 relative overflow-hidden">
-    <img src="CCA-2025-print+(70+of+136).webp" alt="" class="absolute inset-0 w-full h-full object-cover"/>
-  </div>
-
 </div>
 
 <!-- ══════════════ APP ══════════════ -->
@@ -187,7 +183,7 @@
   <!-- SIDEBAR (desktop only) -->
   <nav class="fixed left-0 top-0 h-full w-56 bg-surface-container-low hidden md:flex flex-col py-6 z-50">
     <div class="px-5 mb-8">
-      <img src="Christ+Church+Anglican-2.webp" alt="Christ Church Anglican" style="width:140px;mix-blend-mode:multiply;" class="mb-2"/>
+      <p id="sidebar-church-name" class="font-headline font-bold text-on-surface text-sm leading-snug mb-1 truncate"></p>
       <p class="label-xs text-on-surface-variant">Sound Production</p>
     </div>
 
@@ -195,10 +191,6 @@
       <a class="nav-link active flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant" data-section="overview">
         <span class="material-symbols-outlined">dashboard</span>
         <span class="label-sm">Run Sheet</span>
-      </a>
-      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant" data-section="stagemap">
-        <span class="material-symbols-outlined">layers</span>
-        <span class="label-sm">Stage Map</span>
       </a>
     </div>
 
@@ -220,9 +212,7 @@
     <!-- Top bar -->
     <header class="glass fixed top-0 right-0 left-0 md:left-56 z-40 h-14 flex items-center justify-between px-4 md:px-8 shadow-sm">
       <div class="flex items-center gap-2 md:gap-4 min-w-0">
-        <!-- Logo: mobile only -->
-        <img src="Christ+Church+Anglican-2.webp" alt="CCA" class="md:hidden h-6 flex-shrink-0" style="mix-blend-mode:multiply"/>
-        <!-- Desktop title -->
+        <span id="header-church-name" class="md:hidden font-headline font-bold text-primary text-sm truncate max-w-[130px] flex-shrink-0"></span>
         <span class="hidden md:inline font-headline font-black text-primary tracking-widest uppercase text-sm flex-shrink-0">Sound Production</span>
         <span class="hidden md:inline text-outline-variant/60 flex-shrink-0">·</span>
         <span id="header-date" class="hidden md:inline label-xs text-on-surface-variant flex-shrink-0"></span>
@@ -233,7 +223,6 @@
           <span id="header-liturgical-name" class="label-xs text-on-surface-variant truncate max-w-[160px] md:max-w-none"></span>
         </div>
       </div>
-      <!-- Edit / Save+Cancel controls -->
       <div class="flex items-center gap-2">
         <button id="btn-edit" onclick="startEdit()"
           class="flex items-center gap-1.5 text-primary font-headline font-bold text-xs px-4 py-2 rounded-full hover:bg-secondary-container transition-colors">
@@ -254,106 +243,23 @@
 
     <main class="mt-14 pb-24 md:pb-10">
 
-      <!-- ══ RUN SHEET (OVERVIEW) ══ -->
+      <!-- ══ RUN SHEET ══ -->
       <div id="section-overview" class="section active px-4 md:px-8 py-6 md:py-10 max-w-4xl mx-auto space-y-8 md:space-y-10">
 
-        <!-- Headsets + Wireless -->
+        <!-- Wireless Microphones (built dynamically) -->
         <section class="space-y-4">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 bg-primary rounded-sm"></div>
             <h3 class="label-sm text-on-surface">Wireless Microphones</h3>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-            <!-- Headset 1 -->
-            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2 border-primary">
-              <div class="flex items-center gap-2 mb-3">
-                <span class="material-symbols-outlined text-primary" style="font-size:18px">headset_mic</span>
-                <span class="label-xs text-on-surface-variant">Headset 1 · Clergy</span>
-              </div>
-              <span class="f-view val" id="v-headset1">—</span>
-              <input class="f-edit" type="text" id="f-headset1" placeholder="Clergy name"/>
-              <div class="mt-2">
-                <span class="f-view label-xs text-on-surface-variant/60" id="v-hs1rt"></span>
-                <select class="f-edit text-sm" id="f-hs1rt"></select>
-              </div>
-            </div>
-
-            <!-- Headset 2 -->
-            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2 border-primary">
-              <div class="flex items-center gap-2 mb-3">
-                <span class="material-symbols-outlined text-primary" style="font-size:18px">headset_mic</span>
-                <span class="label-xs text-on-surface-variant">Headset 2 · Clergy</span>
-              </div>
-              <span class="f-view val" id="v-headset2">—</span>
-              <input class="f-edit" type="text" id="f-headset2" placeholder="Clergy name"/>
-              <div class="mt-2">
-                <span class="f-view label-xs text-on-surface-variant/60" id="v-hs2rt"></span>
-                <select class="f-edit text-sm" id="f-hs2rt"></select>
-              </div>
-            </div>
-
-            <!-- Wireless 1–4 -->
-            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2" style="border-color:#2e5a44">
-              <div class="flex items-center gap-2 mb-3">
-                <span class="material-symbols-outlined text-primary" style="font-size:18px">mic</span>
-                <span class="label-xs text-on-surface-variant">Wireless 1 · Podium / Reader</span>
-              </div>
-              <span class="f-view val" id="v-w1">—</span>
-              <input class="f-edit" type="text" id="f-w1" placeholder="Assigned person"/>
-              <div class="mt-2">
-                <span class="f-view label-xs text-on-surface-variant/60" id="v-w1rt"></span>
-                <select class="f-edit text-sm" id="f-w1rt"></select>
-              </div>
-            </div>
-
-            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2" style="border-color:#2e5a44">
-              <div class="flex items-center gap-2 mb-3">
-                <span class="material-symbols-outlined text-primary" style="font-size:18px">mic</span>
-                <span class="label-xs text-on-surface-variant">Wireless 2 · Announcements</span>
-              </div>
-              <span class="f-view val" id="v-w2">—</span>
-              <input class="f-edit" type="text" id="f-w2" placeholder="Assigned person"/>
-              <div class="mt-2">
-                <span class="f-view label-xs text-on-surface-variant/60" id="v-w2rt"></span>
-                <select class="f-edit text-sm" id="f-w2rt"></select>
-              </div>
-            </div>
-
-            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2" style="border-color:#2e5a44">
-              <div class="flex items-center gap-2 mb-3">
-                <span class="material-symbols-outlined text-primary" style="font-size:18px">mic</span>
-                <span class="label-xs text-on-surface-variant">Wireless 3 · Flexible</span>
-              </div>
-              <span class="f-view val" id="v-w3">—</span>
-              <input class="f-edit" type="text" id="f-w3" placeholder="Assigned person"/>
-              <div class="mt-2">
-                <span class="f-view label-xs text-on-surface-variant/60" id="v-w3rt"></span>
-                <select class="f-edit text-sm" id="f-w3rt"></select>
-              </div>
-            </div>
-
-            <div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2" style="border-color:#2e5a44">
-              <div class="flex items-center gap-2 mb-3">
-                <span class="material-symbols-outlined text-primary" style="font-size:18px">mic</span>
-                <span class="label-xs text-on-surface-variant">Wireless 4 · Flexible</span>
-              </div>
-              <span class="f-view val" id="v-w4">—</span>
-              <input class="f-edit" type="text" id="f-w4" placeholder="Assigned person"/>
-              <div class="mt-2">
-                <span class="f-view label-xs text-on-surface-variant/60" id="v-w4rt"></span>
-                <select class="f-edit text-sm" id="f-w4rt"></select>
-              </div>
-            </div>
-
-          </div>
+          <div id="wireless-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
         </section>
 
         <!-- Stage Inputs -->
         <section class="space-y-4">
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 bg-primary rounded-sm"></div>
-            <h3 class="label-sm text-on-surface">Stage Inputs — 7 Channels</h3>
+            <h3 id="inputs-heading" class="label-sm text-on-surface">Stage Inputs</h3>
           </div>
           <div class="bg-surface-container-low rounded-4xl p-2 overflow-x-auto">
             <table class="w-full text-left border-separate border-spacing-2" style="min-width:480px">
@@ -386,102 +292,6 @@
 
       </div><!-- /overview -->
 
-      <!-- ══ STAGE MAP ══ -->
-      <div id="section-stagemap" class="section px-4 md:px-8 py-6 md:py-10 max-w-4xl mx-auto">
-        <div class="mb-6">
-          <div class="flex items-center gap-2 mb-1">
-            <div class="w-2 h-2 bg-primary rounded-sm"></div>
-            <span class="label-sm text-on-surface-variant">Real-time Visualization</span>
-          </div>
-          <h2 class="font-headline font-black text-2xl text-on-surface">Sanctuary Stage Plot</h2>
-          <p class="text-on-surface-variant text-sm mt-1">Hover or tap any area to see the current assignment.</p>
-        </div>
-
-        <div class="bg-surface-container-low rounded-4xl p-6">
-          <div class="relative" id="stage-wrap">
-            <svg viewBox="0 0 680 460" class="w-full h-auto" xmlns="http://www.w3.org/2000/svg">
-              <rect width="680" height="460" rx="12" fill="#f3f4f3"/>
-              <pattern id="grid" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-                <circle cx="1" cy="1" r="1" fill="#c1c9c1" opacity=".4"/>
-              </pattern>
-              <rect width="680" height="460" fill="url(#grid)" rx="12"/>
-
-              <!-- CHOIR LOFT -->
-              <g class="hs" data-hs="choir">
-                <rect x="60" y="24" width="560" height="108" rx="10" fill="#2e5a44" opacity=".85"/>
-                <text x="340" y="66" text-anchor="middle" fill="#a0cfb4" font-family="Manrope" font-weight="800" font-size="15">CHOIR LOFT</text>
-                <text x="340" y="88" text-anchor="middle" fill="#bdeed0" font-family="Inter" font-size="12" id="map-choir-text">Inputs 6 &amp; 7</text>
-              </g>
-
-              <!-- STAGE PLATFORM -->
-              <rect x="120" y="118" width="440" height="248" rx="8" fill="#92400e" opacity=".72"/>
-              <text x="340" y="388" text-anchor="middle" fill="#d97706" font-family="Manrope" font-weight="700" font-size="11" opacity=".8">▲  Stairs  ▲</text>
-
-              <!-- PIANO -->
-              <g class="hs" data-hs="piano">
-                <rect x="14" y="188" width="106" height="78" rx="8" fill="#15422e" opacity=".85"/>
-                <text x="67" y="224" text-anchor="middle" fill="#a0cfb4" font-family="Manrope" font-weight="700" font-size="13">Piano</text>
-                <text x="67" y="244" text-anchor="middle" fill="#bdeed0" font-family="Inter" font-size="11" id="map-piano-text">Input 1</text>
-              </g>
-
-              <!-- ORGAN -->
-              <g class="hs" data-hs="organ">
-                <rect x="560" y="188" width="106" height="78" rx="8" fill="#15422e" opacity=".85"/>
-                <text x="613" y="224" text-anchor="middle" fill="#a0cfb4" font-family="Manrope" font-weight="700" font-size="13">Organ</text>
-                <text x="613" y="244" text-anchor="middle" fill="#bdeed0" font-family="Inter" font-size="11" id="map-organ-text">Input 5</text>
-              </g>
-
-              <!-- STAGE LEFT -->
-              <g class="hs" data-hs="input2">
-                <rect x="134" y="150" width="116" height="76" rx="6" fill="#78350f" opacity=".6" stroke="#fcd34d" stroke-width="1.5" stroke-dasharray="6,4"/>
-                <text x="192" y="184" text-anchor="middle" fill="#fef3c7" font-family="Manrope" font-weight="700" font-size="12">Stage Left</text>
-                <text x="192" y="203" text-anchor="middle" fill="#fcd34d" font-family="Inter" font-size="11" id="map-input2-text">Input 2</text>
-              </g>
-
-              <!-- ALTAR -->
-              <g class="hs" data-hs="altar">
-                <rect x="270" y="146" width="140" height="84" rx="8" fill="#a16207" opacity=".78"/>
-                <text x="340" y="181" text-anchor="middle" fill="#fef9c3" font-family="Manrope" font-weight="800" font-size="15">Altar</text>
-                <text x="340" y="202" text-anchor="middle" fill="#fcd34d" font-family="Inter" font-size="11" id="map-altar-text">Input 3</text>
-              </g>
-
-              <!-- PULPIT -->
-              <g class="hs" data-hs="pulpit">
-                <rect x="430" y="150" width="114" height="78" rx="6" fill="#1e40af" opacity=".82"/>
-                <text x="487" y="185" text-anchor="middle" fill="#bfdbfe" font-family="Manrope" font-weight="700" font-size="13">Pulpit</text>
-                <text x="487" y="205" text-anchor="middle" fill="#93c5fd" font-family="Inter" font-size="11" id="map-pulpit-text">Input 4</text>
-              </g>
-
-              <!-- HEADSET 1 -->
-              <g class="hs" data-hs="headset1">
-                <rect x="148" y="268" width="152" height="52" rx="8" fill="#064e3b" opacity=".88"/>
-                <text x="224" y="287" text-anchor="middle" fill="#6ee7b7" font-family="Inter" font-weight="700" font-size="9" letter-spacing="1">HEADSET 1</text>
-                <text x="224" y="307" text-anchor="middle" fill="#a7f3d0" font-family="Manrope" font-weight="700" font-size="12" id="map-headset1-name">—</text>
-              </g>
-
-              <!-- HEADSET 2 -->
-              <g class="hs" data-hs="headset2">
-                <rect x="314" y="268" width="152" height="52" rx="8" fill="#064e3b" opacity=".88"/>
-                <text x="390" y="287" text-anchor="middle" fill="#6ee7b7" font-family="Inter" font-weight="700" font-size="9" letter-spacing="1">HEADSET 2</text>
-                <text x="390" y="307" text-anchor="middle" fill="#a7f3d0" font-family="Manrope" font-weight="700" font-size="12" id="map-headset2-name">—</text>
-              </g>
-            </svg>
-
-            <div id="map-tooltip">
-              <div id="tt-title" class="font-headline font-bold text-primary text-sm mb-1.5"></div>
-              <div id="tt-body" class="text-on-surface-variant text-xs space-y-1"></div>
-            </div>
-          </div>
-
-          <div class="mt-5 flex flex-wrap gap-4 px-2">
-            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm bg-primary"></div><span class="label-xs text-on-surface-variant">Instruments</span></div>
-            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background:#a16207"></div><span class="label-xs text-on-surface-variant">Altar</span></div>
-            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background:#1e40af"></div><span class="label-xs text-on-surface-variant">Pulpit</span></div>
-            <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-sm" style="background:#064e3b"></div><span class="label-xs text-on-surface-variant">Headsets</span></div>
-          </div>
-        </div>
-      </div>
-
       <!-- ══ SETTINGS ══ -->
       <div id="section-settings" class="section px-4 md:px-8 py-6 md:py-10 max-w-2xl mx-auto space-y-10">
         <div>
@@ -492,6 +302,58 @@
           <h2 class="font-headline font-black text-2xl text-on-surface">Settings</h2>
         </div>
 
+        <!-- Church Setup -->
+        <section class="space-y-5">
+          <h3 class="font-headline font-bold text-sm text-on-surface">Church Setup</h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">Church Name</label>
+              <input class="f-edit" type="text" id="cfg-name" style="display:block" placeholder="Your church name"/>
+            </div>
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">Theme Colour</label>
+              <input class="f-edit" type="color" id="cfg-color" style="display:block"/>
+            </div>
+          </div>
+
+          <div>
+            <label class="label-xs text-on-surface-variant block mb-1.5">Console Channels</label>
+            <select class="f-edit" id="cfg-channels" style="display:block; max-width:180px">
+              <option value="8">8 channels</option>
+              <option value="16">16 channels</option>
+              <option value="24">24 channels</option>
+              <option value="32">32 channels</option>
+              <option value="48">48 channels</option>
+              <option value="64">64 channels</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="label-xs text-on-surface-variant block mb-2">Stage Inputs</label>
+            <div id="cfg-inputs-list" class="space-y-2 mb-2"></div>
+            <button onclick="cfgAddInput()" class="text-primary font-bold text-xs hover:underline">+ Add input</button>
+          </div>
+
+          <div>
+            <label class="label-xs text-on-surface-variant block mb-2">Headsets</label>
+            <div id="cfg-headsets-list" class="space-y-2 mb-2"></div>
+            <button onclick="cfgAddHeadset()" class="text-primary font-bold text-xs hover:underline">+ Add headset</button>
+          </div>
+
+          <div>
+            <label class="label-xs text-on-surface-variant block mb-2">Wireless / Handhelds</label>
+            <div id="cfg-wireless-list" class="space-y-2 mb-2"></div>
+            <button onclick="cfgAddWireless()" class="text-primary font-bold text-xs hover:underline">+ Add wireless mic</button>
+          </div>
+
+          <button onclick="saveSetup()" class="bg-primary text-on-primary font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+            Save Setup
+          </button>
+          <p id="setup-msg" class="text-sm font-medium hidden"></p>
+        </section>
+
+        <!-- Change Password -->
         <section class="space-y-4">
           <h3 class="font-headline font-bold text-sm text-on-surface">Change Password</h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -510,9 +372,10 @@
           <p id="pw-msg" class="text-sm font-medium hidden"></p>
         </section>
 
+        <!-- Reset Data -->
         <section class="space-y-3">
           <h3 class="font-headline font-bold text-sm text-on-surface">Reset Service Data</h3>
-          <p class="text-on-surface-variant text-sm">Clears all current assignments. Passcode not affected.</p>
+          <p class="text-on-surface-variant text-sm">Clears all current assignments. Setup and password not affected.</p>
           <button onclick="resetData()" class="bg-error-container text-error font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
             Clear Service Data
           </button>
@@ -521,15 +384,11 @@
 
     </main>
 
-    <!-- Mobile bottom nav (hidden on md+) -->
+    <!-- Mobile bottom nav -->
     <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-outline-variant/20 flex items-stretch" style="padding-bottom: env(safe-area-inset-bottom)">
       <a class="mob-nav nav-link active flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="overview">
         <span class="material-symbols-outlined" style="font-size:22px">dashboard</span>
         <span class="label-xs" style="font-size:0.55rem">Run Sheet</span>
-      </a>
-      <a class="mob-nav nav-link flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="stagemap">
-        <span class="material-symbols-outlined" style="font-size:22px">layers</span>
-        <span class="label-xs" style="font-size:0.55rem">Stage Map</span>
       </a>
       <a class="mob-nav nav-link flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="settings">
         <span class="material-symbols-outlined" style="font-size:22px">manage_accounts</span>
@@ -545,39 +404,27 @@
 </div><!-- /app -->
 
 <script>
-// ── Supabase ─────────────────────────────────────────────
-// Replace these after creating your Supabase project:
-// Dashboard → Settings → API → Project URL + anon/public key
+// ── Supabase ────────────────────────────────────────────
 const SUPABASE_URL  = 'https://kjsywrmlkwptonunvxep.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_mnr8Iyi6LXYut7l4qb-_Sg__QrpOQjO';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── State ───────────────────────────────────────────────
 let _data    = {};
+let _config  = null;
 let _userId  = null;
 let _channel = null;
-
-// ── Config ──────────────────────────────────────────────
-const LOCS      = ['Piano','Stage Left','Altar','Pulpit','Organ','Choir','Choir'];
-const DEF_ROLES = ['Lead Vocals','','','','','',''];
-
-const MAP_HS = {
-  choir:    { title:'Choir Loft',  rows:[['Input 6','i6r','i6m'],['Input 7','i7r','i7m']] },
-  piano:    { title:'Piano',       rows:[['Role','i1r'],['Musician','i1m']] },
-  organ:    { title:'Organ',       rows:[['Role','i5r'],['Musician','i5m']] },
-  input2:   { title:'Stage Left',  rows:[['Role','i2r'],['Musician','i2m']] },
-  altar:    { title:'Altar',       rows:[['Role','i3r'],['Musician','i3m']] },
-  pulpit:   { title:'Pulpit',      rows:[['Role','i4r'],['Musician','i4m']] },
-  headset1: { title:'Headset 1',   rows:[['Clergy','hs1']] },
-  headset2: { title:'Headset 2',   rows:[['Clergy','hs2']] },
-};
 
 // ── Auth ────────────────────────────────────────────────
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('wizard-screen').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   document.getElementById('login-error').classList.add('hidden');
   init();
 }
-let _authMode = 'login'; // 'login' | 'signup'
+
+let _authMode = 'login';
 
 function toggleAuthMode() {
   _authMode = _authMode === 'login' ? 'signup' : 'login';
@@ -593,6 +440,7 @@ function toggleAuthMode() {
 function showLogin() {
   if (document.body.classList.contains('editing')) cancelEdit();
   document.getElementById('app').style.display = 'none';
+  document.getElementById('wizard-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('pw-input').value = '';
   document.getElementById('email-input').value = '';
@@ -610,6 +458,8 @@ async function doLogin() {
   btn.disabled = false; btn.textContent = 'Sign In';
   if (error) { err.classList.remove('hidden'); return; }
   await loadRemoteData();
+  if (!_config) { showWizard(); return; }
+  applyTheme(_config.color);
   subscribeRealtime();
   showApp();
 }
@@ -635,7 +485,7 @@ async function doSignUp() {
 async function doLogout() {
   if (_channel) { sb.removeChannel(_channel); _channel = null; }
   await sb.auth.signOut();
-  _userId = null; _data = {};
+  _userId = null; _data = {}; _config = null;
   showLogin();
 }
 
@@ -660,6 +510,7 @@ function flash(el, text, cls) {
 
 // ── Data ────────────────────────────────────────────────
 function getData() { return _data; }
+
 function saveData(d) {
   _data = d;
   if (!_userId) return;
@@ -668,11 +519,22 @@ function saveData(d) {
     .then(({ error }) => { if (error) console.error('Save error:', error); });
 }
 
+function saveOrgConfig(cfg) {
+  _config = cfg;
+  if (!_userId) return;
+  sb.from('run_sheets')
+    .upsert({ user_id: _userId, org_config: cfg, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    .then(({ error }) => { if (error) console.error('Config save error:', error); });
+}
+
 async function loadRemoteData() {
   const { data: { user } } = await sb.auth.getUser();
   _userId = user.id;
-  const { data: row } = await sb.from('run_sheets').select('data').eq('user_id', _userId).single();
-  _data = row?.data || {};
+  const { data: row } = await sb.from('run_sheets')
+    .select('data, org_config')
+    .eq('user_id', _userId).single();
+  _data   = row?.data       || {};
+  _config = row?.org_config || null;
 }
 
 function subscribeRealtime() {
@@ -697,20 +559,286 @@ function subscribeRealtime() {
 sb.auth.getSession().then(async ({ data: { session } }) => {
   if (session) {
     await loadRemoteData();
+    if (!_config) { showWizard(); return; }
+    applyTheme(_config.color);
     subscribeRealtime();
     showApp();
   }
 });
 
+// ── Theme ────────────────────────────────────────────────
+function applyTheme(hex) {
+  let s = document.getElementById('org-theme');
+  if (!s) { s = document.createElement('style'); s.id = 'org-theme'; document.head.appendChild(s); }
+  s.textContent = `
+    .bg-primary { background-color: ${hex} !important; }
+    .text-primary { color: ${hex} !important; }
+    .border-primary { border-color: ${hex} !important; }
+    .f-edit:focus { border-bottom-color: ${hex} !important; }
+    .nav-link.active { color: ${hex} !important; border-right-color: ${hex} !important; }
+    .mob-nav.active { border-top-color: ${hex} !important; }
+    #wiz-card { border-color: ${hex} !important; }
+  `;
+  if (_config) {
+    document.title = `Sound Production | ${_config.name}`;
+    ['sidebar-church-name','header-church-name'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = _config.name;
+    });
+  }
+}
+
+// ── Wizard ───────────────────────────────────────────────
+let _wizStep = 1;
+const WIZ_TOTAL = 4;
+
+// Default config pre-populated with CCA's setup so existing users just click Finish
+let _wiz = {
+  name: '',
+  color: '#15422e',
+  console_channels: 24,
+  inputs: [
+    {location:'Piano',       default_role:'Lead Vocals'},
+    {location:'Stage Left',  default_role:''},
+    {location:'Altar',       default_role:''},
+    {location:'Pulpit',      default_role:''},
+    {location:'Organ',       default_role:''},
+    {location:'Choir',       default_role:''},
+    {location:'Choir',       default_role:''}
+  ],
+  headsets: [
+    {label:'Headset 1', role:'Clergy'},
+    {label:'Headset 2', role:'Clergy'}
+  ],
+  wireless: [
+    {label:'Wireless 1', role:'Podium / Reader'},
+    {label:'Wireless 2', role:'Announcements'},
+    {label:'Wireless 3', role:'Flexible'},
+    {label:'Wireless 4', role:'Flexible'}
+  ]
+};
+
+function showWizard() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('wizard-screen').style.display = 'flex';
+  _wizStep = 1;
+  renderWizStep();
+}
+
+function renderWizStep() {
+  // Step dots
+  for (let i = 1; i <= WIZ_TOTAL; i++) {
+    const dot = document.getElementById(`wiz-dot-${i}`);
+    if (dot) dot.className = `w-2 h-2 rounded-full ${i === _wizStep ? 'bg-primary' : 'bg-outline-variant'}`;
+  }
+  document.getElementById('wiz-step-label').textContent = `Step ${_wizStep} of ${WIZ_TOTAL}`;
+  document.getElementById('wiz-back').style.display = _wizStep === 1 ? 'none' : 'block';
+  document.getElementById('wiz-next').textContent = _wizStep === WIZ_TOTAL ? 'Finish Setup' : 'Next →';
+
+  const content = document.getElementById('wiz-content');
+  if (_wizStep === 1) {
+    content.innerHTML = `
+      <h3 class="font-headline font-bold text-xl mb-1">Welcome! Let's set up your church.</h3>
+      <p class="text-on-surface-variant text-sm mb-6">This takes about a minute.</p>
+      <div class="space-y-4">
+        <div>
+          <label class="label-xs text-on-surface-variant block mb-1.5">Church Name</label>
+          <input id="wiz-name" type="text" class="f-edit" style="display:block" placeholder="e.g. Christ Church Anglican GR" value="${esc(_wiz.name)}" oninput="wizPreviewName(this.value)"/>
+          <p id="wiz-name-err" class="text-xs text-error font-medium mt-1 hidden">Please enter your church name.</p>
+        </div>
+        <div>
+          <label class="label-xs text-on-surface-variant block mb-1.5">Theme Colour</label>
+          <div class="flex items-center gap-3">
+            <input id="wiz-color" type="color" class="f-edit" style="display:block; max-width:80px" value="${esc(_wiz.color)}" oninput="wizPreviewColor(this.value)"/>
+            <span class="text-on-surface-variant text-xs">This sets your button and accent colour.</span>
+          </div>
+        </div>
+      </div>`;
+  } else if (_wizStep === 2) {
+    const opts = [8,16,24,32,48,64].map(n =>
+      `<option value="${n}"${n === _wiz.console_channels ? ' selected' : ''}>${n} channels</option>`
+    ).join('');
+    content.innerHTML = `
+      <h3 class="font-headline font-bold text-xl mb-1">Your Console</h3>
+      <p class="text-on-surface-variant text-sm mb-6">How many channels does your mixing console have?</p>
+      <div>
+        <label class="label-xs text-on-surface-variant block mb-1.5">Channel Count</label>
+        <select id="wiz-channels" class="f-edit" style="display:block; max-width:200px">${opts}</select>
+      </div>`;
+  } else if (_wizStep === 3) {
+    content.innerHTML = `
+      <h3 class="font-headline font-bold text-xl mb-1">Stage Inputs</h3>
+      <p class="text-on-surface-variant text-sm mb-4">How many inputs does your stage have? Give each a location and optional default role.</p>
+      <div class="flex items-center gap-3 mb-4">
+        <label class="label-xs text-on-surface-variant">Number of inputs</label>
+        <input id="wiz-input-count" type="number" min="1" max="24" value="${_wiz.inputs.length}" class="f-edit" style="display:block; max-width:70px" oninput="wizUpdateInputCount(this.value)"/>
+      </div>
+      <div class="flex gap-2 mb-1">
+        <span class="label-xs text-on-surface-variant w-6 flex-shrink-0"></span>
+        <span class="label-xs text-on-surface-variant flex-1">Location</span>
+        <span class="label-xs text-on-surface-variant flex-1">Default Role</span>
+        <span class="w-4"></span>
+      </div>
+      <div id="wiz-input-rows" class="space-y-2 max-h-56 overflow-y-auto">${wizInputRows()}</div>`;
+  } else if (_wizStep === 4) {
+    content.innerHTML = `
+      <h3 class="font-headline font-bold text-xl mb-1">Wireless Microphones</h3>
+      <p class="text-on-surface-variant text-sm mb-5">Configure your headsets and wireless/handheld mics.</p>
+      <div class="space-y-5">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <label class="label-xs text-on-surface-variant">Headsets</label>
+            <input id="wiz-hs-count" type="number" min="0" max="8" value="${_wiz.headsets.length}" class="f-edit" style="display:block; max-width:60px" oninput="wizUpdateHsCount(this.value)"/>
+          </div>
+          <div id="wiz-hs-rows" class="space-y-2">${wizHsRows()}</div>
+        </div>
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <label class="label-xs text-on-surface-variant">Wireless / Handhelds</label>
+            <input id="wiz-w-count" type="number" min="0" max="12" value="${_wiz.wireless.length}" class="f-edit" style="display:block; max-width:60px" oninput="wizUpdateWCount(this.value)"/>
+          </div>
+          <div id="wiz-w-rows" class="space-y-2">${wizWRows()}</div>
+        </div>
+      </div>`;
+  }
+}
+
+function wizInputRows() {
+  return _wiz.inputs.map((inp, i) => `
+    <div class="flex gap-2 items-center">
+      <span class="label-xs text-on-surface-variant w-6 text-center flex-shrink-0">${i+1}</span>
+      <input id="wiz-il-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="e.g. Piano" value="${esc(inp.location)}"/>
+      <input id="wiz-ir-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="e.g. Lead Vocals" value="${esc(inp.default_role)}"/>
+    </div>`).join('');
+}
+function wizHsRows() {
+  return _wiz.headsets.map((h, i) => `
+    <div class="flex gap-2 items-center">
+      <input id="wiz-hl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(h.label)}"/>
+      <input id="wiz-hr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(h.role)}"/>
+    </div>`).join('');
+}
+function wizWRows() {
+  return _wiz.wireless.map((w, i) => `
+    <div class="flex gap-2 items-center">
+      <input id="wiz-wl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(w.label)}"/>
+      <input id="wiz-wr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(w.role)}"/>
+    </div>`).join('');
+}
+
+function wizPreviewName(val) { /* live preview — no-op needed for now */ }
+function wizPreviewColor(hex) {
+  document.getElementById('wiz-card').style.borderColor = hex;
+}
+
+function wizUpdateInputCount(val) {
+  wizSyncInputs();
+  const n = Math.max(1, Math.min(24, parseInt(val) || 1));
+  while (_wiz.inputs.length < n) _wiz.inputs.push({location:'', default_role:''});
+  _wiz.inputs = _wiz.inputs.slice(0, n);
+  document.getElementById('wiz-input-rows').innerHTML = wizInputRows();
+}
+function wizUpdateHsCount(val) {
+  wizSyncWireless();
+  const n = Math.max(0, Math.min(8, parseInt(val) || 0));
+  while (_wiz.headsets.length < n) _wiz.headsets.push({label:`Headset ${_wiz.headsets.length+1}`, role:''});
+  _wiz.headsets = _wiz.headsets.slice(0, n);
+  document.getElementById('wiz-hs-rows').innerHTML = wizHsRows();
+}
+function wizUpdateWCount(val) {
+  wizSyncWireless();
+  const n = Math.max(0, Math.min(12, parseInt(val) || 0));
+  while (_wiz.wireless.length < n) _wiz.wireless.push({label:`Wireless ${_wiz.wireless.length+1}`, role:''});
+  _wiz.wireless = _wiz.wireless.slice(0, n);
+  document.getElementById('wiz-w-rows').innerHTML = wizWRows();
+}
+
+function wizSyncInputs() {
+  _wiz.inputs.forEach((_, i) => {
+    const l = document.getElementById(`wiz-il-${i}`);
+    const r = document.getElementById(`wiz-ir-${i}`);
+    if (l) _wiz.inputs[i].location     = l.value;
+    if (r) _wiz.inputs[i].default_role = r.value;
+  });
+}
+function wizSyncWireless() {
+  _wiz.headsets.forEach((_, i) => {
+    const l = document.getElementById(`wiz-hl-${i}`);
+    const r = document.getElementById(`wiz-hr-${i}`);
+    if (l) _wiz.headsets[i].label = l.value;
+    if (r) _wiz.headsets[i].role  = r.value;
+  });
+  _wiz.wireless.forEach((_, i) => {
+    const l = document.getElementById(`wiz-wl-${i}`);
+    const r = document.getElementById(`wiz-wr-${i}`);
+    if (l) _wiz.wireless[i].label = l.value;
+    if (r) _wiz.wireless[i].role  = r.value;
+  });
+}
+
+function wizSaveCurrentStep() {
+  if (_wizStep === 1) {
+    const name = document.getElementById('wiz-name')?.value.trim();
+    const errEl = document.getElementById('wiz-name-err');
+    if (!name) { errEl?.classList.remove('hidden'); return false; }
+    errEl?.classList.add('hidden');
+    _wiz.name  = name;
+    _wiz.color = document.getElementById('wiz-color')?.value || _wiz.color;
+  } else if (_wizStep === 2) {
+    _wiz.console_channels = parseInt(document.getElementById('wiz-channels')?.value) || 24;
+  } else if (_wizStep === 3) {
+    wizSyncInputs();
+    // Clean up empty location names
+    _wiz.inputs = _wiz.inputs.map((inp, i) => ({
+      location:     inp.location.trim()     || `Input ${i+1}`,
+      default_role: inp.default_role.trim()
+    }));
+  } else if (_wizStep === 4) {
+    wizSyncWireless();
+    _wiz.headsets = _wiz.headsets.map((h, i) => ({
+      label: h.label.trim() || `Headset ${i+1}`,
+      role:  h.role.trim()
+    }));
+    _wiz.wireless = _wiz.wireless.map((w, i) => ({
+      label: w.label.trim() || `Wireless ${i+1}`,
+      role:  w.role.trim()
+    }));
+  }
+  return true;
+}
+
+function wizBack() {
+  wizSaveCurrentStep();
+  _wizStep--;
+  renderWizStep();
+}
+
+function wizNext() {
+  if (!wizSaveCurrentStep()) return;
+  if (_wizStep < WIZ_TOTAL) {
+    _wizStep++;
+    renderWizStep();
+  } else {
+    finishWizard();
+  }
+}
+
+function finishWizard() {
+  saveOrgConfig(_wiz);
+  applyTheme(_wiz.color);
+  subscribeRealtime();
+  showApp();
+}
+
 // ── Nav ─────────────────────────────────────────────────
 function goTo(id) {
   document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.section === id));
   document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === 'section-' + id));
-  if (id === 'stagemap') renderStageMap();
+  if (id === 'settings') loadSettingsForm();
 }
 document.querySelectorAll('[data-section]').forEach(l => l.addEventListener('click', () => goTo(l.dataset.section)));
 
-// ── Liturgical Calendar (algorithmic — no network required) ──
+// ── Liturgical Calendar ──────────────────────────────────
 const LITURGICAL_COLORS = {
   White:'#e8e0d0', Red:'#b33030', Purple:'#5b2d82',
   Green:'#2d6a35', Rose:'#c2607a',
@@ -724,12 +852,10 @@ function getLiturgicalDay(date) {
                 'Seventeenth','Eighteenth','Nineteenth','Twentieth','Twenty-First','Twenty-Second',
                 'Twenty-Third','Twenty-Fourth','Twenty-Fifth','Twenty-Sixth','Twenty-Seventh'];
   const WDAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-
   function add(d, n)  { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
   function noon(d)    { return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); }
   function dp(a, b)   { return Math.round((+noon(a) - +noon(b)) / 86400000); }
   function same(a, b) { return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
-
   function computeEaster(yr) {
     const a=yr%19,b=Math.floor(yr/100),c=yr%100,d=Math.floor(b/4),e=b%4;
     const f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
@@ -740,38 +866,25 @@ function getLiturgicalDay(date) {
   function computeAdvent1(yr) {
     const d25=new Date(yr,11,25); return add(d25, -(21+d25.getDay()));
   }
-
-  // Easter-relative seasons (check current year then previous)
   for (const ey of [y, y-1]) {
     const E = computeEaster(ey);
     const d = dp(date, E);
-
-    // Last Sunday after Epiphany (Sunday before Ash Wednesday)
     if (d === -49 && dow === 0) return { name:'The Last Sunday after the Epiphany', color:'White' };
     if (d < -46) continue;
-
     if (d === -46) return { name:'Ash Wednesday', color:'Purple' };
-    if (d >= -45 && d <= -43)
-      return { name:`${WDAY[dow]} after Ash Wednesday`, color:'Purple' };
-
-    // Lent: Lent 1 Sunday through Saturday before Palm Sunday
+    if (d >= -45 && d <= -43) return { name:`${WDAY[dow]} after Ash Wednesday`, color:'Purple' };
     if (d >= -42 && d <= -8) {
-      const wk  = Math.ceil((d + 43) / 7); // 1–5
-      const col = (wk===4 && dow===0) ? 'Rose' : 'Purple'; // Laetare Sunday
+      const wk  = Math.ceil((d + 43) / 7);
+      const col = (wk===4 && dow===0) ? 'Rose' : 'Purple';
       if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday of Lent`, color:col };
       return { name:`${WDAY[dow]}, ${ORDS[wk-1]} Week of Lent`, color:'Purple' };
     }
-
-    // Holy Week
     const HW = {'-7':['Palm Sunday','Red'],'-6':['Monday in Holy Week','Red'],
                 '-5':['Tuesday in Holy Week','Red'],'-4':['Wednesday in Holy Week','Red'],
-                '-3':['Maundy Thursday','White'],'-2':['Good Friday','Red'],
-                '-1':['Holy Saturday','White']};
+                '-3':['Maundy Thursday','White'],'-2':['Good Friday','Red'],'-1':['Holy Saturday','White']};
     if (HW[d]) return { name:HW[d][0], color:HW[d][1] };
-
     if (d === 0) return { name:'Easter Day', color:'White' };
-    if (d >= 1 && d <= 6)
-      return { name:`${WDAY[dow]} of Easter Week`, color:'White' };
+    if (d >= 1 && d <= 6) return { name:`${WDAY[dow]} of Easter Week`, color:'White' };
     if (d === 39) return { name:'Ascension Day', color:'White' };
     if (d >= 7 && d <= 48) {
       const wk = Math.floor(d/7) + 1;
@@ -780,8 +893,6 @@ function getLiturgicalDay(date) {
     }
     if (d === 49) return { name:'The Day of Pentecost', color:'Red' };
     if (d === 56) return { name:'Trinity Sunday', color:'White' };
-
-    // Ordinary time after Trinity
     if (d > 56) {
       const adv = computeAdvent1(ey);
       if (dp(date, adv) < 0) {
@@ -791,8 +902,6 @@ function getLiturgicalDay(date) {
       }
     }
   }
-
-  // Advent
   for (const ay of [y, y-1]) {
     const adv = computeAdvent1(ay);
     const d   = dp(date, adv);
@@ -802,28 +911,25 @@ function getLiturgicalDay(date) {
     if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday of Advent`, color:col };
     return { name:`${WDAY[dow]}, ${ORDS[wk-1]} Week of Advent`, color:'Purple' };
   }
-
-  // Christmas & Epiphany
   for (const cy of [y, y-1]) {
     const xmas = new Date(cy, 11, 25);
     const dx   = dp(date, xmas);
-
     if (dx === 0) return { name:'Christmas Day', color:'White' };
     if (dx > 0 && dx <= 11) {
       if (date.getMonth()===0 && date.getDate()===1) return { name:'Holy Name of Jesus', color:'White' };
-      const s1 = add(xmas, (7 - xmas.getDay()) % 7 || 7);
+      function add2(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
+      const s1 = add2(xmas, (7 - xmas.getDay()) % 7 || 7);
       if (dow===0 && same(date,s1)) return { name:'The First Sunday of Christmas', color:'White' };
-      if (dow===0 && same(date, add(s1,7))) return { name:'The Second Sunday of Christmas', color:'White' };
+      if (dow===0 && same(date, add2(s1,7))) return { name:'The Second Sunday of Christmas', color:'White' };
       return { name:'Christmastide', color:'White' };
     }
-
     const epiph = new Date(cy+1, 0, 6);
     if (same(date, epiph)) return { name:'The Epiphany', color:'White' };
-
     const de = dp(date, epiph);
     if (de > 0 && de <= 56) {
       const epDow   = epiph.getDay();
-      const baptism = add(epiph, epDow===0 ? 7 : 7-epDow);
+      function add3(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
+      const baptism = add3(epiph, epDow===0 ? 7 : 7-epDow);
       if (same(date, baptism)) return { name:'The Baptism of Our Lord', color:'White' };
       const db = dp(date, baptism);
       if (db > 0) {
@@ -835,7 +941,6 @@ function getLiturgicalDay(date) {
       return { name:`${WDAY[dow]} after the Epiphany`, color:'White' };
     }
   }
-
   return null;
 }
 
@@ -855,37 +960,43 @@ function showLiturgicalDay() {
 // ── Init ────────────────────────────────────────────────
 function init() {
   tickClock();
+  buildWirelessSection();
   initRoutingSelects();
   buildInputsTable();
   renderOverview();
   loadNotes();
   showLiturgicalDay();
+  // Update inputs heading
+  const h = document.getElementById('inputs-heading');
+  if (h && _config) h.textContent = `Stage Inputs — ${_config.inputs.length} Input${_config.inputs.length !== 1 ? 's' : ''}`;
 }
 
 // ── Edit mode ────────────────────────────────────────────
 function startEdit() {
-  // Load current data into inputs
   const d = getData();
-  document.getElementById('f-headset1').value = d.hs1 || '';
-  document.getElementById('f-headset2').value = d.hs2 || '';
-  document.getElementById('f-hs1rt').value = d.hs1rt || '';
-  document.getElementById('f-hs2rt').value = d.hs2rt || '';
-  document.getElementById('f-w1').value = d.w1 || '';
-  document.getElementById('f-w2').value = d.w2 || '';
-  document.getElementById('f-w3').value = d.w3 || '';
-  document.getElementById('f-w4').value = d.w4 || '';
-  document.getElementById('f-w1rt').value = d.w1rt || '';
-  document.getElementById('f-w2rt').value = d.w2rt || '';
-  document.getElementById('f-w3rt').value = d.w3rt || '';
-  document.getElementById('f-w4rt').value = d.w4rt || '';
-  for (let i = 1; i <= 7; i++) {
-    const re  = document.getElementById(`f-i${i}r`);
-    const me  = document.getElementById(`f-i${i}m`);
-    const rte = document.getElementById(`f-i${i}rt`);
-    if (re)  re.value  = d[`i${i}r`]  !== undefined ? d[`i${i}r`]  : DEF_ROLES[i-1];
-    if (me)  me.value  = d[`i${i}m`]  || '';
-    if (rte) rte.value = d[`i${i}rt`] || '';
-  }
+  (_config.headsets || []).forEach((_, i) => {
+    const n = i + 1;
+    const fe = document.getElementById(`f-hs${n}`);
+    const rt = document.getElementById(`f-hs${n}rt`);
+    if (fe) fe.value = d[`hs${n}`]   || '';
+    if (rt) rt.value = d[`hs${n}rt`] || '';
+  });
+  (_config.wireless || []).forEach((_, i) => {
+    const n = i + 1;
+    const fe = document.getElementById(`f-w${n}`);
+    const rt = document.getElementById(`f-w${n}rt`);
+    if (fe) fe.value = d[`w${n}`]   || '';
+    if (rt) rt.value = d[`w${n}rt`] || '';
+  });
+  (_config.inputs || []).forEach((inp, i) => {
+    const n = i + 1;
+    const re  = document.getElementById(`f-i${n}r`);
+    const me  = document.getElementById(`f-i${n}m`);
+    const rte = document.getElementById(`f-i${n}rt`);
+    if (re)  re.value  = d[`i${n}r`]  !== undefined ? d[`i${n}r`]  : (inp.default_role || '');
+    if (me)  me.value  = d[`i${n}m`]  || '';
+    if (rte) rte.value = d[`i${n}rt`] || '';
+  });
   document.body.classList.add('editing');
 }
 
@@ -895,78 +1006,113 @@ function cancelEdit() {
 
 function saveEdit() {
   const d = getData();
-  d.hs1   = document.getElementById('f-headset1').value.trim();
-  d.hs2   = document.getElementById('f-headset2').value.trim();
-  d.hs1rt = document.getElementById('f-hs1rt').value.trim();
-  d.hs2rt = document.getElementById('f-hs2rt').value.trim();
-  d.w1    = document.getElementById('f-w1').value.trim();
-  d.w2    = document.getElementById('f-w2').value.trim();
-  d.w3    = document.getElementById('f-w3').value.trim();
-  d.w4    = document.getElementById('f-w4').value.trim();
-  d.w1rt  = document.getElementById('f-w1rt').value.trim();
-  d.w2rt  = document.getElementById('f-w2rt').value.trim();
-  d.w3rt  = document.getElementById('f-w3rt').value.trim();
-  d.w4rt  = document.getElementById('f-w4rt').value.trim();
-  for (let i = 1; i <= 7; i++) {
-    const re  = document.getElementById(`f-i${i}r`);
-    const me  = document.getElementById(`f-i${i}m`);
-    const rte = document.getElementById(`f-i${i}rt`);
-    d[`i${i}r`]  = re  ? re.value.trim()  : '';
-    d[`i${i}m`]  = me  ? me.value.trim()  : '';
-    d[`i${i}rt`] = rte ? rte.value.trim() : '';
-  }
+  (_config.headsets || []).forEach((_, i) => {
+    const n = i + 1;
+    const fe = document.getElementById(`f-hs${n}`);
+    const rt = document.getElementById(`f-hs${n}rt`);
+    d[`hs${n}`]   = fe ? fe.value.trim() : '';
+    d[`hs${n}rt`] = rt ? rt.value.trim() : '';
+  });
+  (_config.wireless || []).forEach((_, i) => {
+    const n = i + 1;
+    const fe = document.getElementById(`f-w${n}`);
+    const rt = document.getElementById(`f-w${n}rt`);
+    d[`w${n}`]   = fe ? fe.value.trim() : '';
+    d[`w${n}rt`] = rt ? rt.value.trim() : '';
+  });
+  (_config.inputs || []).forEach((_, i) => {
+    const n = i + 1;
+    const re  = document.getElementById(`f-i${n}r`);
+    const me  = document.getElementById(`f-i${n}m`);
+    const rte = document.getElementById(`f-i${n}rt`);
+    d[`i${n}r`]  = re  ? re.value.trim()  : '';
+    d[`i${n}m`]  = me  ? me.value.trim()  : '';
+    d[`i${n}rt`] = rte ? rte.value.trim() : '';
+  });
   saveData(d);
   document.body.classList.remove('editing');
   renderOverview();
-  renderStageMap();
-  updatePill(d);
 }
 
 // ── Render Overview ──────────────────────────────────────
 function renderOverview() {
   const d = getData();
-  updatePill(d);
-
   const setVal = (id, val) => {
     const el = document.getElementById(id);
     if (!el) return;
     if (val) { el.textContent = val; el.classList.remove('empty'); }
     else     { el.textContent = '—'; el.classList.add('empty'); }
   };
-
-  setVal('v-headset1', d.hs1);
-  setVal('v-headset2', d.hs2);
-  setVal('v-w1', d.w1);
-  setVal('v-w2', d.w2);
-  setVal('v-w3', d.w3);
-  setVal('v-w4', d.w4);
   const setRt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || ''; };
-  setRt('v-hs1rt', d.hs1rt);
-  setRt('v-hs2rt', d.hs2rt);
-  setRt('v-w1rt', d.w1rt);
-  setRt('v-w2rt', d.w2rt);
-  setRt('v-w3rt', d.w3rt);
-  setRt('v-w4rt', d.w4rt);
 
-  // Inputs table — update view spans in place (don't rebuild, edit inputs live there)
-  for (let i = 1; i <= 7; i++) {
-    const role    = d[`i${i}r`]  !== undefined ? d[`i${i}r`]  : DEF_ROLES[i-1];
-    const mus     = d[`i${i}m`]  || '';
-    const routing = d[`i${i}rt`] || '';
-    const rv  = document.getElementById(`v-i${i}r`);
-    const mv  = document.getElementById(`v-i${i}m`);
-    const rtv = document.getElementById(`v-i${i}rt`);
+  (_config?.headsets || []).forEach((_, i) => {
+    const n = i + 1;
+    setVal(`v-hs${n}`, d[`hs${n}`]);
+    setRt(`v-hs${n}rt`, d[`hs${n}rt`]);
+  });
+  (_config?.wireless || []).forEach((_, i) => {
+    const n = i + 1;
+    setVal(`v-w${n}`, d[`w${n}`]);
+    setRt(`v-w${n}rt`, d[`w${n}rt`]);
+  });
+  (_config?.inputs || []).forEach((inp, i) => {
+    const n = i + 1;
+    const role    = d[`i${n}r`]  !== undefined ? d[`i${n}r`]  : (inp.default_role || '');
+    const mus     = d[`i${n}m`]  || '';
+    const routing = d[`i${n}rt`] || '';
+    const rv  = document.getElementById(`v-i${n}r`);
+    const mv  = document.getElementById(`v-i${n}m`);
+    const rtv = document.getElementById(`v-i${n}rt`);
     if (rv)  { rv.textContent  = role    || 'Not set';    rv.classList.toggle('empty', !role); }
     if (mv)  { mv.textContent  = mus     || 'Unassigned'; mv.classList.toggle('empty', !mus);  }
     if (rtv) { rtv.textContent = routing || '—';          rtv.classList.toggle('empty', !routing); }
-  }
+  });
 }
 
-// ── Build stage inputs table (edit mode rows) ────────────
+// ── Build wireless section ───────────────────────────────
+function buildWirelessSection() {
+  if (!_config) return;
+  const d = getData();
+  const grid = document.getElementById('wireless-grid');
+  let html = '';
+  (_config.headsets || []).forEach((hs, i) => {
+    const n = i + 1;
+    html += `<div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2 border-primary">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-outlined text-primary" style="font-size:18px">headset_mic</span>
+        <span class="label-xs text-on-surface-variant">${esc(hs.label)}${hs.role ? ' · ' + esc(hs.role) : ''}</span>
+      </div>
+      <span class="f-view val" id="v-hs${n}">—</span>
+      <input class="f-edit" type="text" id="f-hs${n}" placeholder="${esc(hs.label)}"/>
+      <div class="mt-2">
+        <span class="f-view label-xs text-on-surface-variant/60" id="v-hs${n}rt"></span>
+        <select class="f-edit text-sm" id="f-hs${n}rt">${chOpts(d[`hs${n}rt`] || '')}</select>
+      </div>
+    </div>`;
+  });
+  (_config.wireless || []).forEach((w, i) => {
+    const n = i + 1;
+    html += `<div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2 border-primary" style="opacity:0.85">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-outlined text-primary" style="font-size:18px">mic</span>
+        <span class="label-xs text-on-surface-variant">${esc(w.label)}${w.role ? ' · ' + esc(w.role) : ''}</span>
+      </div>
+      <span class="f-view val" id="v-w${n}">—</span>
+      <input class="f-edit" type="text" id="f-w${n}" placeholder="Assigned person"/>
+      <div class="mt-2">
+        <span class="f-view label-xs text-on-surface-variant/60" id="v-w${n}rt"></span>
+        <select class="f-edit text-sm" id="f-w${n}rt">${chOpts(d[`w${n}rt`] || '')}</select>
+      </div>
+    </div>`;
+  });
+  grid.innerHTML = html;
+}
+
 // ── Channel routing helpers ───────────────────────────────
 function chOpts(selected) {
+  const max = _config?.console_channels || 24;
   let o = '<option value="">—</option>';
-  for (let i = 1; i <= 24; i++) {
+  for (let i = 1; i <= max; i++) {
     const v = `Ch ${i}`;
     o += `<option value="${v}"${selected === v ? ' selected' : ''}>${v}</option>`;
   }
@@ -974,41 +1120,48 @@ function chOpts(selected) {
 }
 
 function initRoutingSelects() {
+  if (!_config) return;
   const d = getData();
-  [['f-hs1rt','hs1rt'],['f-hs2rt','hs2rt'],
-   ['f-w1rt','w1rt'],['f-w2rt','w2rt'],['f-w3rt','w3rt'],['f-w4rt','w4rt']
-  ].forEach(([id, key]) => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = chOpts(d[key] || '');
+  (_config.headsets || []).forEach((_, i) => {
+    const n = i + 1;
+    const el = document.getElementById(`f-hs${n}rt`);
+    if (el) el.innerHTML = chOpts(d[`hs${n}rt`] || '');
+  });
+  (_config.wireless || []).forEach((_, i) => {
+    const n = i + 1;
+    const el = document.getElementById(`f-w${n}rt`);
+    if (el) el.innerHTML = chOpts(d[`w${n}rt`] || '');
   });
 }
 
+// ── Build stage inputs table ─────────────────────────────
 function buildInputsTable() {
-  // We build the tbody with both view and edit cells
+  if (!_config) return;
   const d = getData();
   const tbody = document.getElementById('inputs-tbody');
   let rows = '';
-  for (let i = 1; i <= 7; i++) {
-    const role    = d[`i${i}r`]  !== undefined ? d[`i${i}r`]  : DEF_ROLES[i-1];
-    const mus     = d[`i${i}m`]  || '';
-    const routing = d[`i${i}rt`] || '';
+  (_config.inputs || []).forEach((inp, i) => {
+    const n       = i + 1;
+    const role    = d[`i${n}r`]  !== undefined ? d[`i${n}r`]  : (inp.default_role || '');
+    const mus     = d[`i${n}m`]  || '';
+    const routing = d[`i${n}rt`] || '';
     rows += `<tr class="bg-surface-container-lowest rounded-xl">
-      <td class="px-5 py-3 rounded-l-xl font-headline font-black text-primary text-sm">${String(i).padStart(2,'0')}</td>
-      <td class="px-5 py-3 label-xs text-on-surface-variant">${LOCS[i-1]}</td>
+      <td class="px-5 py-3 rounded-l-xl font-headline font-black text-primary text-sm">${String(n).padStart(2,'0')}</td>
+      <td class="px-5 py-3 label-xs text-on-surface-variant">${esc(inp.location)}</td>
       <td class="px-3 py-2">
-        <span class="f-view val ${role ? '' : 'empty'}" id="v-i${i}r">${esc(role) || 'Not set'}</span>
-        <input class="f-edit text-sm" type="text" id="f-i${i}r" value="${esc(role)}" placeholder="Role / Instrument"/>
+        <span class="f-view val ${role ? '' : 'empty'}" id="v-i${n}r">${esc(role) || 'Not set'}</span>
+        <input class="f-edit text-sm" type="text" id="f-i${n}r" value="${esc(role)}" placeholder="Role / Instrument"/>
       </td>
       <td class="px-3 py-2">
-        <span class="f-view val ${mus ? '' : 'empty'}" id="v-i${i}m">${esc(mus) || 'Unassigned'}</span>
-        <input class="f-edit text-sm" type="text" id="f-i${i}m" value="${esc(mus)}" placeholder="Musician name"/>
+        <span class="f-view val ${mus ? '' : 'empty'}" id="v-i${n}m">${esc(mus) || 'Unassigned'}</span>
+        <input class="f-edit text-sm" type="text" id="f-i${n}m" value="${esc(mus)}" placeholder="Musician name"/>
       </td>
       <td class="px-3 py-2 rounded-r-xl">
-        <span class="f-view val ${routing ? '' : 'empty'}" id="v-i${i}rt">${esc(routing) || '—'}</span>
-        <select class="f-edit text-sm" id="f-i${i}rt">${chOpts(routing)}</select>
+        <span class="f-view val ${routing ? '' : 'empty'}" id="v-i${n}rt">${esc(routing) || '—'}</span>
+        <select class="f-edit text-sm" id="f-i${n}rt">${chOpts(routing)}</select>
       </td>
     </tr>`;
-  }
+  });
   tbody.innerHTML = rows;
 }
 
@@ -1023,73 +1176,122 @@ function tickClock() {
   if (ht) ht.textContent = timeStr;
 }
 setInterval(tickClock, 1000);
+tickClock();
 
-function updatePill(d) {
-  // no-op — pill replaced by live clock
+function updatePill(d) { /* no-op */ }
+
+// ── Settings config editor ───────────────────────────────
+let _cfgDraft = null;
+
+function loadSettingsForm() {
+  if (!_config) return;
+  _cfgDraft = JSON.parse(JSON.stringify(_config));
+  document.getElementById('cfg-name').value     = _config.name;
+  document.getElementById('cfg-color').value    = _config.color;
+  document.getElementById('cfg-channels').value = _config.console_channels;
+  renderCfgInputsList();
+  renderCfgHeadsetsList();
+  renderCfgWirelessList();
 }
 
-// ── Stage map ────────────────────────────────────────────
-function renderStageMap() {
-  const d = getData();
-  const s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || '—'; };
-  s('map-headset1-name', d.hs1);
-  s('map-headset2-name', d.hs2);
-  s('map-piano-text',  d.i1m || d.i1r || 'Input 1');
-  s('map-organ-text',  d.i5m || d.i5r || 'Input 5');
-  s('map-input2-text', d.i2m || d.i2r || 'Input 2');
-  s('map-altar-text',  d.i3m || d.i3r || 'Input 3');
-  s('map-pulpit-text', d.i4m || d.i4r || 'Input 4');
-  s('map-choir-text',  [d.i6r, d.i7r].filter(Boolean).join(' & ') || 'Inputs 6 & 7');
+function syncCfgDraftFromDOM() {
+  (_cfgDraft.inputs || []).forEach((_, i) => {
+    const l = document.getElementById(`cfg-il-${i}`); if (l) _cfgDraft.inputs[i].location     = l.value;
+    const r = document.getElementById(`cfg-ir-${i}`); if (r) _cfgDraft.inputs[i].default_role = r.value;
+  });
+  (_cfgDraft.headsets || []).forEach((_, i) => {
+    const l = document.getElementById(`cfg-hl-${i}`); if (l) _cfgDraft.headsets[i].label = l.value;
+    const r = document.getElementById(`cfg-hr-${i}`); if (r) _cfgDraft.headsets[i].role  = r.value;
+  });
+  (_cfgDraft.wireless || []).forEach((_, i) => {
+    const l = document.getElementById(`cfg-wl-${i}`); if (l) _cfgDraft.wireless[i].label = l.value;
+    const r = document.getElementById(`cfg-wr-${i}`); if (r) _cfgDraft.wireless[i].role  = r.value;
+  });
 }
 
-const tooltip = document.getElementById('map-tooltip');
-document.getElementById('stage-wrap').addEventListener('mousemove', e => {
-  const hs = e.target.closest('[data-hs]');
-  if (!hs) { tooltip.classList.remove('show'); return; }
-  const cfg = MAP_HS[hs.dataset.hs]; if (!cfg) return;
-  const d = getData();
-  document.getElementById('tt-title').textContent = cfg.title;
-  document.getElementById('tt-body').innerHTML = cfg.rows.map(r => {
-    const val = r.length === 3 ? [d[r[1]], d[r[2]]].filter(Boolean).join(' · ') : d[r[1]];
-    return `<div><span class="text-on-surface-variant">${r[0]}: </span><span class="font-medium text-on-surface">${val ? esc(val) : '—'}</span></div>`;
-  }).join('');
-  const wrap = document.getElementById('stage-wrap').getBoundingClientRect();
-  let x = e.clientX - wrap.left + 14, y = e.clientY - wrap.top + 14;
-  if (x + 200 > wrap.width) x -= 210;
-  tooltip.style.left = Math.max(4, x) + 'px';
-  tooltip.style.top  = Math.max(4, y) + 'px';
-  tooltip.classList.add('show');
-});
-document.getElementById('stage-wrap').addEventListener('mouseleave', () => tooltip.classList.remove('show'));
+function renderCfgInputsList() {
+  document.getElementById('cfg-inputs-list').innerHTML = (_cfgDraft.inputs || []).map((inp, i) => `
+    <div class="flex gap-2 items-center">
+      <span class="label-xs text-on-surface-variant w-5 text-center flex-shrink-0">${i+1}</span>
+      <input id="cfg-il-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Location" value="${esc(inp.location)}"/>
+      <input id="cfg-ir-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Default role" value="${esc(inp.default_role)}"/>
+      <button onclick="cfgRemoveInput(${i})" class="text-error font-bold text-base px-1 flex-shrink-0 hover:opacity-70">×</button>
+    </div>`).join('');
+}
+function renderCfgHeadsetsList() {
+  document.getElementById('cfg-headsets-list').innerHTML = (_cfgDraft.headsets || []).map((h, i) => `
+    <div class="flex gap-2 items-center">
+      <input id="cfg-hl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(h.label)}"/>
+      <input id="cfg-hr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(h.role)}"/>
+      <button onclick="cfgRemoveHeadset(${i})" class="text-error font-bold text-base px-1 flex-shrink-0 hover:opacity-70">×</button>
+    </div>`).join('');
+}
+function renderCfgWirelessList() {
+  document.getElementById('cfg-wireless-list').innerHTML = (_cfgDraft.wireless || []).map((w, i) => `
+    <div class="flex gap-2 items-center">
+      <input id="cfg-wl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(w.label)}"/>
+      <input id="cfg-wr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(w.role)}"/>
+      <button onclick="cfgRemoveWireless(${i})" class="text-error font-bold text-base px-1 flex-shrink-0 hover:opacity-70">×</button>
+    </div>`).join('');
+}
 
-// Touch support for stage map
-let _tooltipTimer;
-document.getElementById('stage-wrap').addEventListener('touchstart', e => {
-  const hs = e.target.closest('[data-hs]');
-  if (!hs) return;
-  e.preventDefault(); // stop scroll while interacting with map
-  clearTimeout(_tooltipTimer);
-  const touch = e.touches[0];
-  const cfg = MAP_HS[hs.dataset.hs]; if (!cfg) return;
-  const d = getData();
-  document.getElementById('tt-title').textContent = cfg.title;
-  document.getElementById('tt-body').innerHTML = cfg.rows.map(r => {
-    const val = r.length === 3 ? [d[r[1]], d[r[2]]].filter(Boolean).join(' · ') : d[r[1]];
-    return `<div><span style="color:#414943">${r[0]}: </span><span style="font-weight:600;color:#191c1c">${val ? esc(val) : '—'}</span></div>`;
-  }).join('');
-  const wrap = document.getElementById('stage-wrap').getBoundingClientRect();
-  let x = touch.clientX - wrap.left + 14, y = touch.clientY - wrap.top - 80;
-  if (x + 200 > wrap.width) x = touch.clientX - wrap.left - 210;
-  tooltip.style.left = Math.max(4, x) + 'px';
-  tooltip.style.top  = Math.max(4, y) + 'px';
-  tooltip.classList.add('show');
-  _tooltipTimer = setTimeout(() => tooltip.classList.remove('show'), 2500);
-}, { passive: false });
+function cfgAddInput() {
+  syncCfgDraftFromDOM();
+  const n = _cfgDraft.inputs.length + 1;
+  _cfgDraft.inputs.push({location:`Input ${n}`, default_role:''});
+  renderCfgInputsList();
+}
+function cfgRemoveInput(i) {
+  syncCfgDraftFromDOM();
+  _cfgDraft.inputs.splice(i, 1);
+  renderCfgInputsList();
+}
+function cfgAddHeadset() {
+  syncCfgDraftFromDOM();
+  const n = _cfgDraft.headsets.length + 1;
+  _cfgDraft.headsets.push({label:`Headset ${n}`, role:''});
+  renderCfgHeadsetsList();
+}
+function cfgRemoveHeadset(i) {
+  syncCfgDraftFromDOM();
+  _cfgDraft.headsets.splice(i, 1);
+  renderCfgHeadsetsList();
+}
+function cfgAddWireless() {
+  syncCfgDraftFromDOM();
+  const n = _cfgDraft.wireless.length + 1;
+  _cfgDraft.wireless.push({label:`Wireless ${n}`, role:''});
+  renderCfgWirelessList();
+}
+function cfgRemoveWireless(i) {
+  syncCfgDraftFromDOM();
+  _cfgDraft.wireless.splice(i, 1);
+  renderCfgWirelessList();
+}
 
-document.getElementById('stage-wrap').addEventListener('touchmove', e => {
-  const hs = e.target.closest('[data-hs]');
-  if (hs) e.preventDefault(); // prevent page scroll while on a hotspot
-}, { passive: false });
+function saveSetup() {
+  syncCfgDraftFromDOM();
+  const name = document.getElementById('cfg-name').value.trim();
+  const msg  = document.getElementById('setup-msg');
+  if (!name) { flash(msg, 'Church name is required.', 'text-error'); return; }
+  const newCfg = {
+    name,
+    color:            document.getElementById('cfg-color').value,
+    console_channels: parseInt(document.getElementById('cfg-channels').value) || 24,
+    inputs:   (_cfgDraft.inputs   || []).map((inp, i) => ({ location: inp.location.trim()   || `Input ${i+1}`,   default_role: inp.default_role.trim() })),
+    headsets: (_cfgDraft.headsets || []).map((h, i)   => ({ label:    h.label.trim()         || `Headset ${i+1}`, role:         h.role.trim()          })),
+    wireless: (_cfgDraft.wireless || []).map((w, i)   => ({ label:    w.label.trim()         || `Wireless ${i+1}`,role:         w.role.trim()          })),
+  };
+  saveOrgConfig(newCfg);
+  applyTheme(newCfg.color);
+  buildWirelessSection();
+  initRoutingSelects();
+  buildInputsTable();
+  renderOverview();
+  const h = document.getElementById('inputs-heading');
+  if (h) h.textContent = `Stage Inputs — ${newCfg.inputs.length} Input${newCfg.inputs.length !== 1 ? 's' : ''}`;
+  flash(msg, 'Setup saved!', 'text-primary');
+}
 
 // ── Notes ─────────────────────────────────────────────────
 function loadNotes() { document.getElementById('f-notes').value = getData().notes || ''; }
@@ -1106,8 +1308,6 @@ function resetData() {
   saveData({ notes: d.notes || '' });
   buildInputsTable();
   renderOverview();
-  renderStageMap();
-  updatePill({});
 }
 
 // ── Util ──────────────────────────────────────────────────
