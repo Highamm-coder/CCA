@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Sound Production | Christ Church Anglican</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0..1&display=swap" rel="stylesheet"/>
@@ -148,12 +149,16 @@
 
       <div class="space-y-4">
         <div>
-          <label class="label-xs text-on-surface-variant block mb-2">Passcode</label>
-          <input id="pw-input" type="password" placeholder="Enter passcode" class="f-edit rounded-md" style="display:block" autocomplete="current-password"/>
+          <label class="label-xs text-on-surface-variant block mb-2">Email</label>
+          <input id="email-input" type="email" placeholder="team@yourchurch.org" class="f-edit rounded-md" style="display:block" autocomplete="email"/>
         </div>
-        <div id="login-error" class="hidden text-xs text-error font-medium">Incorrect passcode.</div>
+        <div>
+          <label class="label-xs text-on-surface-variant block mb-2">Password</label>
+          <input id="pw-input" type="password" placeholder="Password" class="f-edit rounded-md" style="display:block" autocomplete="current-password"/>
+        </div>
+        <div id="login-error" class="hidden text-xs text-error font-medium">Incorrect email or password.</div>
         <button onclick="doLogin()" class="w-full bg-primary text-on-primary font-headline font-bold text-sm tracking-wide py-3 rounded-full hover:opacity-90 transition-opacity">
-          Enter
+          Sign In
         </button>
       </div>
     </div>
@@ -479,14 +484,10 @@
 
         <section class="space-y-4">
           <h3 class="font-headline font-bold text-sm text-on-surface">Change Passcode</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="label-xs text-on-surface-variant block mb-1.5">Current</label>
-              <input class="f-edit" type="password" id="pw-current" placeholder="Current" style="display:block"/>
-            </div>
-            <div>
-              <label class="label-xs text-on-surface-variant block mb-1.5">New</label>
-              <input class="f-edit" type="password" id="pw-new" placeholder="New" style="display:block"/>
+              <label class="label-xs text-on-surface-variant block mb-1.5">New Password</label>
+              <input class="f-edit" type="password" id="pw-new" placeholder="New password" style="display:block"/>
             </div>
             <div>
               <label class="label-xs text-on-surface-variant block mb-1.5">Confirm</label>
@@ -494,7 +495,7 @@
             </div>
           </div>
           <button onclick="changePassword()" class="bg-primary text-on-primary font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
-            Update Passcode
+            Update Password
           </button>
           <p id="pw-msg" class="text-sm font-medium hidden"></p>
         </section>
@@ -534,11 +535,16 @@
 </div><!-- /app -->
 
 <script>
-// ── Config ──────────────────────────────────────────────
-const KEY_PW   = 'cca_pw';
-const KEY_DATA = 'cca_data';
-const DEF_PW   = 'sunday';
+// ── Supabase ─────────────────────────────────────────────
+// Replace these after creating your Supabase project:
+// Dashboard → Settings → API → Project URL + anon/public key
+const SUPABASE_URL  = 'PASTE_YOUR_PROJECT_URL_HERE';
+const SUPABASE_ANON = 'PASTE_YOUR_ANON_KEY_HERE';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let _data   = {};
+let _userId = null;
 
+// ── Config ──────────────────────────────────────────────
 const LOCS      = ['Piano','Stage Left','Altar','Pulpit','Organ','Choir','Choir'];
 const DEF_ROLES = ['Lead Vocals','','','','','',''];
 
@@ -554,40 +560,50 @@ const MAP_HS = {
 };
 
 // ── Auth ────────────────────────────────────────────────
-function getPassword() { return localStorage.getItem(KEY_PW) || DEF_PW; }
-
-function doLogin() {
-  const val = document.getElementById('pw-input').value;
-  const err = document.getElementById('login-error');
-  if (val === getPassword()) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    err.classList.add('hidden');
-    init();
-  } else {
-    err.classList.remove('hidden');
-  }
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('login-error').classList.add('hidden');
+  init();
 }
-document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-
-function doLogout() {
+function showLogin() {
   if (document.body.classList.contains('editing')) cancelEdit();
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('pw-input').value = '';
+  document.getElementById('email-input').value = '';
 }
 
-function changePassword() {
-  const cur = document.getElementById('pw-current').value;
+async function doLogin() {
+  const email = document.getElementById('email-input').value.trim();
+  const pw    = document.getElementById('pw-input').value;
+  const err   = document.getElementById('login-error');
+  const btn   = document.querySelector('button[onclick="doLogin()"]');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+  btn.disabled = false; btn.textContent = 'Sign In';
+  if (error) { err.classList.remove('hidden'); return; }
+  await loadRemoteData();
+  subscribeRealtime();
+  showApp();
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  _userId = null; _data = {};
+  showLogin();
+}
+
+async function changePassword() {
   const nw  = document.getElementById('pw-new').value;
   const cf  = document.getElementById('pw-confirm').value;
   const msg = document.getElementById('pw-msg');
-  if (cur !== getPassword()) { flash(msg,'Incorrect passcode.','text-error'); return; }
-  if (!nw)                   { flash(msg,'New passcode cannot be empty.','text-error'); return; }
-  if (nw !== cf)             { flash(msg,'Passcodes do not match.','text-error'); return; }
-  localStorage.setItem(KEY_PW, nw);
-  flash(msg,'Passcode updated.','text-primary');
-  ['pw-current','pw-new','pw-confirm'].forEach(id => document.getElementById(id).value = '');
+  if (!nw)       { flash(msg, 'New password cannot be empty.', 'text-error'); return; }
+  if (nw !== cf) { flash(msg, 'Passwords do not match.', 'text-error'); return; }
+  const { error } = await sb.auth.updateUser({ password: nw });
+  if (error) { flash(msg, error.message, 'text-error'); return; }
+  flash(msg, 'Password updated.', 'text-primary');
+  ['pw-new','pw-confirm'].forEach(id => document.getElementById(id).value = '');
 }
 
 function flash(el, text, cls) {
@@ -598,8 +614,47 @@ function flash(el, text, cls) {
 }
 
 // ── Data ────────────────────────────────────────────────
-function getData() { try { return JSON.parse(localStorage.getItem(KEY_DATA)) || {}; } catch { return {}; } }
-function saveData(d) { localStorage.setItem(KEY_DATA, JSON.stringify(d)); }
+function getData() { return _data; }
+function saveData(d) {
+  _data = d;
+  if (!_userId) return;
+  sb.from('run_sheets')
+    .upsert({ user_id: _userId, data: d, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    .then(({ error }) => { if (error) console.error('Save error:', error); });
+}
+
+async function loadRemoteData() {
+  const { data: { user } } = await sb.auth.getUser();
+  _userId = user.id;
+  const { data: row } = await sb.from('run_sheets').select('data').eq('user_id', _userId).single();
+  _data = row?.data || {};
+}
+
+function subscribeRealtime() {
+  sb.channel('runsheet-' + _userId)
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'run_sheets', filter: `user_id=eq.${_userId}` },
+      payload => {
+        _data = payload.new.data;
+        renderOverview();
+        const notes = document.getElementById('f-notes');
+        if (notes && document.activeElement !== notes) notes.value = _data.notes || '';
+      })
+    .subscribe();
+}
+
+// Enter key on login fields
+['pw-input','email-input'].forEach(id =>
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); }));
+
+// Restore session on page load
+sb.auth.getSession().then(async ({ data: { session } }) => {
+  if (session) {
+    await loadRemoteData();
+    subscribeRealtime();
+    showApp();
+  }
+});
 
 // ── Nav ─────────────────────────────────────────────────
 function goTo(id) {
