@@ -493,7 +493,7 @@
         </div>
 
         <section class="space-y-4">
-          <h3 class="font-headline font-bold text-sm text-on-surface">Change Passcode</h3>
+          <h3 class="font-headline font-bold text-sm text-on-surface">Change Password</h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="label-xs text-on-surface-variant block mb-1.5">New Password</label>
@@ -551,8 +551,9 @@
 const SUPABASE_URL  = 'https://kjsywrmlkwptonunvxep.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_mnr8Iyi6LXYut7l4qb-_Sg__QrpOQjO';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-let _data   = {};
-let _userId = null;
+let _data    = {};
+let _userId  = null;
+let _channel = null;
 
 // ── Config ──────────────────────────────────────────────
 const LOCS      = ['Piano','Stage Left','Altar','Pulpit','Organ','Choir','Choir'];
@@ -632,6 +633,7 @@ async function doSignUp() {
 }
 
 async function doLogout() {
+  if (_channel) { sb.removeChannel(_channel); _channel = null; }
   await sb.auth.signOut();
   _userId = null; _data = {};
   showLogin();
@@ -674,7 +676,8 @@ async function loadRemoteData() {
 }
 
 function subscribeRealtime() {
-  sb.channel('runsheet-' + _userId)
+  if (_channel) { sb.removeChannel(_channel); _channel = null; }
+  _channel = sb.channel('runsheet-' + _userId)
     .on('postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'run_sheets', filter: `user_id=eq.${_userId}` },
       payload => {
