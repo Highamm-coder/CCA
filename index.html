@@ -1,1319 +1,419 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Sound Production Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0..1&display=swap" rel="stylesheet"/>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          "primary":                  "#15422e",
-          "on-primary":               "#ffffff",
-          "primary-container":        "#2e5a44",
-          "on-primary-container":     "#a0cfb4",
-          "primary-fixed":            "#bdeed0",
-          "secondary-container":      "#d2e8d9",
-          "on-secondary-container":   "#55695d",
-          "secondary-fixed":          "#d2e8d9",
-          "surface":                  "#f9f9f8",
-          "surface-container-lowest": "#ffffff",
-          "surface-container-low":    "#f3f4f3",
-          "surface-container":        "#edeeed",
-          "surface-container-high":   "#e7e8e7",
-          "surface-container-highest":"#e1e3e2",
-          "on-surface":               "#191c1c",
-          "on-surface-variant":       "#414943",
-          "outline-variant":          "#c1c9c1",
-          "error":                    "#ba1a1a",
-          "error-container":          "#ffdad6",
-        },
-        fontFamily: {
-          headline: ["Manrope", "sans-serif"],
-          body:     ["Inter", "sans-serif"],
-        },
-        borderRadius: {
-          DEFAULT: "0.125rem",
-          sm: "0.25rem", md: "0.375rem", lg: "0.5rem",
-          xl: "0.75rem", "2xl": "1rem", "3xl": "1.5rem", "4xl": "2rem",
-          full: "9999px",
-        },
-      },
-    },
-  };
-</script>
-<style>
-  body { font-family: 'Inter', sans-serif; background: #f9f9f8; color: #191c1c; }
-  .font-headline { font-family: 'Manrope', sans-serif; }
-  .label-xs { font-family: 'Inter'; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
-  .label-sm { font-family: 'Inter'; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-size: 20px; line-height: 1; }
-  .fill-icon { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-
-  /* Underline inputs */
-  .f-edit {
-    background: #e1e3e2; border: none; border-bottom: 2px solid transparent;
-    border-radius: 0.375rem 0.375rem 0 0; padding: 7px 10px 5px;
-    font-family: 'Inter'; font-size: inherit; color: #191c1c;
-    width: 100%; transition: background .15s, border-color .15s; outline: none;
-  }
-  .f-edit:focus { background: #fff; border-bottom-color: #15422e; }
-  .f-edit::placeholder { color: #717973; }
-  select.f-edit { cursor: pointer; }
-  input[type="color"].f-edit { padding: 3px 6px; height: 38px; cursor: pointer; }
-
-  /* Edit mode toggling */
-  .f-view  { display: block; }
-  .f-edit  { display: none; }
-  body.editing .f-view { display: none; }
-  body.editing .f-edit { display: block; }
-  body.editing #btn-edit  { display: none; }
-  body.editing #btn-save-row { display: flex; }
-  #btn-save-row { display: none; }
-
-  /* Glass topbar */
-  .glass { background: rgba(249,249,248,0.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-
-  /* Sections */
-  .section { display: none; }
-  .section.active { display: block; }
-
-  /* Sidebar nav */
-  .nav-link { transition: all .15s; border-right: 3px solid transparent; }
-  .nav-link.active { background: rgba(189,238,208,0.4); color: #15422e; border-right-color: #15422e; }
-  .nav-link:not(.active):hover { background: #edeeed; }
-
-  /* Mobile bottom nav overrides */
-  .mob-nav { border-right: none !important; border-top: 3px solid transparent; }
-  .mob-nav.active { border-top-color: #15422e; background: rgba(189,238,208,0.3); }
-
-  /* Scrollbar hide */
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-  /* Value display */
-  .val { display: block; font-weight: 600; color: #191c1c; }
-  .val.empty { color: #717973; font-weight: 400; font-style: italic; }
-
-  /* ── iPad / Touch ── */
-  input, select, textarea { font-size: 16px !important; }
-  * { -webkit-tap-highlight-color: transparent; }
-  button, a, [data-section] { touch-action: manipulation; }
-  main { -webkit-overflow-scrolling: touch; }
-  .nav-link { min-height: 44px; display: flex; align-items: center; }
-  #btn-edit, #btn-save-row button { min-height: 44px; }
-  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  nav { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ordo — The Full Production Dashboard for Liturgical Churches</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="min-h-screen">
+<body class="theme-dark">
 
-<!-- ══════════════ LOGIN ══════════════ -->
-<div id="login-screen" class="fixed inset-0 z-[200] flex items-center justify-center bg-surface" style="display:flex">
-  <div class="w-full max-w-sm mx-auto px-8 py-12">
-
-    <div class="mb-8">
-      <h1 class="font-headline font-black text-primary text-2xl tracking-tight">Sound Production</h1>
-      <p class="text-on-surface-variant text-sm mt-1">Sign in to access your run sheet.</p>
-    </div>
-
-    <div class="space-y-4">
-      <div>
-        <label class="label-xs text-on-surface-variant block mb-2">Email</label>
-        <input id="email-input" type="email" placeholder="team@yourchurch.org" class="f-edit rounded-md" style="display:block" autocomplete="email"/>
-      </div>
-      <div>
-        <label class="label-xs text-on-surface-variant block mb-2">Password</label>
-        <input id="pw-input" type="password" placeholder="Password" class="f-edit rounded-md" style="display:block" autocomplete="current-password"/>
-      </div>
-      <div id="confirm-pw-wrap" class="hidden">
-        <label class="label-xs text-on-surface-variant block mb-2">Confirm Password</label>
-        <input id="confirm-pw-input" type="password" placeholder="Confirm password" class="f-edit rounded-md" style="display:block" autocomplete="new-password"/>
-      </div>
-      <div id="login-error" class="hidden text-xs text-error font-medium">Incorrect email or password.</div>
-      <div id="signup-error" class="hidden text-xs text-error font-medium"></div>
-      <div id="signup-success" class="hidden text-xs text-green-700 font-medium">Account created! Check your email to confirm, then sign in.</div>
-      <button id="auth-btn" onclick="doLogin()" class="w-full bg-primary text-on-primary font-headline font-bold text-sm tracking-wide py-3 rounded-full hover:opacity-90 transition-opacity">
-        Sign In
-      </button>
-      <p class="text-center text-xs text-on-surface-variant">
-        <span id="auth-toggle-text">Don't have an account?</span>
-        <button id="auth-toggle-btn" onclick="toggleAuthMode()" class="ml-1 text-primary font-semibold hover:underline">Create account</button>
-      </p>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════ WIZARD ══════════════ -->
-<div id="wizard-screen" class="fixed inset-0 z-[300] bg-surface flex items-start justify-center overflow-y-auto py-8 px-4" style="display:none">
-  <div id="wiz-card" class="bg-surface-container-lowest rounded-4xl shadow-lg w-full max-w-lg border-t-4 border-primary">
-    <div class="p-8">
-      <!-- Step indicators -->
-      <div class="flex items-center gap-2 mb-6">
-        <div id="wiz-dot-1" class="w-2 h-2 rounded-full bg-primary"></div>
-        <div id="wiz-dot-2" class="w-2 h-2 rounded-full bg-outline-variant"></div>
-        <div id="wiz-dot-3" class="w-2 h-2 rounded-full bg-outline-variant"></div>
-        <div id="wiz-dot-4" class="w-2 h-2 rounded-full bg-outline-variant"></div>
-        <span id="wiz-step-label" class="ml-2 label-xs text-on-surface-variant">Step 1 of 4</span>
-      </div>
-      <!-- Step content -->
-      <div id="wiz-content"></div>
-      <!-- Nav buttons -->
-      <div class="flex justify-between mt-8">
-        <button id="wiz-back" onclick="wizBack()" class="font-headline font-bold text-sm px-5 py-2.5 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors" style="display:none">
-          ← Back
-        </button>
-        <div></div>
-        <button id="wiz-next" onclick="wizNext()" class="bg-primary text-on-primary font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
-          Next →
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════ APP ══════════════ -->
-<div id="app" class="min-h-screen flex" style="display:none">
-
-  <!-- SIDEBAR (desktop only) -->
-  <nav class="fixed left-0 top-0 h-full w-56 bg-surface-container-low hidden md:flex flex-col py-6 z-50">
-    <div class="px-5 mb-8">
-      <p id="sidebar-church-name" class="font-headline font-bold text-on-surface text-sm leading-snug mb-1 truncate"></p>
-      <p class="label-xs text-on-surface-variant">Sound Production</p>
-    </div>
-
-    <div class="flex-1 px-2 space-y-0.5">
-      <a class="nav-link active flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant" data-section="overview">
-        <span class="material-symbols-outlined">dashboard</span>
-        <span class="label-sm">Run Sheet</span>
-      </a>
-    </div>
-
-    <div class="px-2 border-t border-outline-variant/30 pt-3 space-y-0.5">
-      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant" data-section="settings">
-        <span class="material-symbols-outlined">manage_accounts</span>
-        <span class="label-sm">Settings</span>
-      </a>
-      <a onclick="doLogout()" class="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant nav-link">
-        <span class="material-symbols-outlined">lock</span>
-        <span class="label-sm">Lock</span>
-      </a>
-    </div>
-  </nav>
-
-  <!-- MAIN -->
-  <div class="flex-1 md:ml-56 flex flex-col min-h-screen">
-
-    <!-- Top bar -->
-    <header class="glass fixed top-0 right-0 left-0 md:left-56 z-40 h-14 flex items-center justify-between px-4 md:px-8 shadow-sm">
-      <div class="flex items-center gap-2 md:gap-4 min-w-0">
-        <span id="header-church-name" class="md:hidden font-headline font-bold text-primary text-sm truncate max-w-[130px] flex-shrink-0"></span>
-        <span class="hidden md:inline font-headline font-black text-primary tracking-widest uppercase text-sm flex-shrink-0">Sound Production</span>
-        <span class="hidden md:inline text-outline-variant/60 flex-shrink-0">·</span>
-        <span id="header-date" class="hidden md:inline label-xs text-on-surface-variant flex-shrink-0"></span>
-        <span id="header-time" class="label-xs text-on-surface-variant flex-shrink-0"></span>
-        <div id="header-liturgical" class="hidden items-center gap-2 flex-shrink-0">
-          <span class="text-outline-variant/60">·</span>
-          <span id="header-liturgical-chip" class="inline-block w-2 h-2 rounded-full flex-shrink-0"></span>
-          <span id="header-liturgical-name" class="label-xs text-on-surface-variant truncate max-w-[160px] md:max-w-none"></span>
+    <!-- NAVIGATION -->
+    <nav class="nav-light">
+        <div class="nav-container">
+            <div class="flex items-center gap-2">
+                <div class="logo text-dark">Ordo</div>
+            </div>
+            <div class="nav-links hidden-mobile">
+                <a href="#features" class="text-dark font-semibold text-xs tracking-widest uppercase hover-opacity">Docs</a>
+                <a href="#about" class="text-dark font-semibold text-xs tracking-widest uppercase hover-opacity">Blog</a>
+            </div>
+            <div class="nav-actions">
+                <a href="/app/" class="text-dark font-semibold text-xs tracking-widest uppercase mr-4 hover-opacity">App</a>
+                <a href="#getstarted" class="btn btn-accent btn-small px-6 py-2 rounded-sm text-xs font-bold tracking-widest uppercase">GET A DEMO</a>
+            </div>
         </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <button id="btn-edit" onclick="startEdit()"
-          class="flex items-center gap-1.5 text-primary font-headline font-bold text-xs px-4 py-2 rounded-full hover:bg-secondary-container transition-colors">
-          <span class="material-symbols-outlined" style="font-size:16px">edit</span> Edit
-        </button>
-        <div id="btn-save-row" class="items-center gap-2">
-          <button onclick="cancelEdit()"
-            class="font-headline font-bold text-xs px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors">
-            Cancel
-          </button>
-          <button onclick="saveEdit()"
-            class="flex items-center gap-1.5 bg-primary text-on-primary font-headline font-bold text-xs px-5 py-2 rounded-full hover:opacity-90 transition-opacity">
-            <span class="material-symbols-outlined" style="font-size:16px">check</span> Save
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <main class="mt-14 pb-24 md:pb-10">
-
-      <!-- ══ RUN SHEET ══ -->
-      <div id="section-overview" class="section active px-4 md:px-8 py-6 md:py-10 max-w-4xl mx-auto space-y-8 md:space-y-10">
-
-        <!-- Wireless Microphones (built dynamically) -->
-        <section class="space-y-4">
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 bg-primary rounded-sm"></div>
-            <h3 class="label-sm text-on-surface">Wireless Microphones</h3>
-          </div>
-          <div id="wireless-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
-        </section>
-
-        <!-- Stage Inputs -->
-        <section class="space-y-4">
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 bg-primary rounded-sm"></div>
-            <h3 id="inputs-heading" class="label-sm text-on-surface">Stage Inputs</h3>
-          </div>
-          <div class="bg-surface-container-low rounded-4xl p-2 overflow-x-auto">
-            <table class="w-full text-left border-separate border-spacing-2" style="min-width:480px">
-              <thead>
-                <tr class="label-xs text-on-surface-variant">
-                  <th class="px-5 py-3 w-12">Input</th>
-                  <th class="px-5 py-3 w-28">Location</th>
-                  <th class="px-5 py-3">Instrument / Role</th>
-                  <th class="px-5 py-3">Musician</th>
-                  <th class="px-5 py-3">Routing</th>
-                </tr>
-              </thead>
-              <tbody id="inputs-tbody" class="text-sm"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Notes -->
-        <section class="space-y-4">
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 bg-primary rounded-sm"></div>
-            <h3 class="label-sm text-on-surface">Notes</h3>
-          </div>
-          <textarea id="f-notes"
-            class="w-full bg-surface-container-low rounded-3xl p-6 resize-none min-h-[140px] font-body text-sm text-on-surface border-none outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-            placeholder="Cues, reminders, anything the team needs to know…"
-            oninput="autoSaveNotes()"></textarea>
-          <p class="label-xs text-on-surface-variant">Auto-saved as you type.</p>
-        </section>
-
-      </div><!-- /overview -->
-
-      <!-- ══ SETTINGS ══ -->
-      <div id="section-settings" class="section px-4 md:px-8 py-6 md:py-10 max-w-2xl mx-auto space-y-10">
-        <div>
-          <div class="flex items-center gap-2 mb-1">
-            <div class="w-2 h-2 bg-primary rounded-sm"></div>
-            <span class="label-sm text-on-surface-variant">Administration</span>
-          </div>
-          <h2 class="font-headline font-black text-2xl text-on-surface">Settings</h2>
-        </div>
-
-        <!-- Church Setup -->
-        <section class="space-y-5">
-          <h3 class="font-headline font-bold text-sm text-on-surface">Church Setup</h3>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="label-xs text-on-surface-variant block mb-1.5">Church Name</label>
-              <input class="f-edit" type="text" id="cfg-name" style="display:block" placeholder="Your church name"/>
-            </div>
-            <div>
-              <label class="label-xs text-on-surface-variant block mb-1.5">Theme Colour</label>
-              <input class="f-edit" type="color" id="cfg-color" style="display:block"/>
-            </div>
-          </div>
-
-          <div>
-            <label class="label-xs text-on-surface-variant block mb-1.5">Console Channels</label>
-            <select class="f-edit" id="cfg-channels" style="display:block; max-width:180px">
-              <option value="8">8 channels</option>
-              <option value="16">16 channels</option>
-              <option value="24">24 channels</option>
-              <option value="32">32 channels</option>
-              <option value="48">48 channels</option>
-              <option value="64">64 channels</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="label-xs text-on-surface-variant block mb-2">Stage Inputs</label>
-            <div id="cfg-inputs-list" class="space-y-2 mb-2"></div>
-            <button onclick="cfgAddInput()" class="text-primary font-bold text-xs hover:underline">+ Add input</button>
-          </div>
-
-          <div>
-            <label class="label-xs text-on-surface-variant block mb-2">Headsets</label>
-            <div id="cfg-headsets-list" class="space-y-2 mb-2"></div>
-            <button onclick="cfgAddHeadset()" class="text-primary font-bold text-xs hover:underline">+ Add headset</button>
-          </div>
-
-          <div>
-            <label class="label-xs text-on-surface-variant block mb-2">Wireless / Handhelds</label>
-            <div id="cfg-wireless-list" class="space-y-2 mb-2"></div>
-            <button onclick="cfgAddWireless()" class="text-primary font-bold text-xs hover:underline">+ Add wireless mic</button>
-          </div>
-
-          <button onclick="saveSetup()" class="bg-primary text-on-primary font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
-            Save Setup
-          </button>
-          <p id="setup-msg" class="text-sm font-medium hidden"></p>
-        </section>
-
-        <!-- Change Password -->
-        <section class="space-y-4">
-          <h3 class="font-headline font-bold text-sm text-on-surface">Change Password</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="label-xs text-on-surface-variant block mb-1.5">New Password</label>
-              <input class="f-edit" type="password" id="pw-new" placeholder="New password" style="display:block"/>
-            </div>
-            <div>
-              <label class="label-xs text-on-surface-variant block mb-1.5">Confirm</label>
-              <input class="f-edit" type="password" id="pw-confirm" placeholder="Confirm" style="display:block"/>
-            </div>
-          </div>
-          <button onclick="changePassword()" class="bg-primary text-on-primary font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
-            Update Password
-          </button>
-          <p id="pw-msg" class="text-sm font-medium hidden"></p>
-        </section>
-
-        <!-- Reset Data -->
-        <section class="space-y-3">
-          <h3 class="font-headline font-bold text-sm text-on-surface">Reset Service Data</h3>
-          <p class="text-on-surface-variant text-sm">Clears all current assignments. Setup and password not affected.</p>
-          <button onclick="resetData()" class="bg-error-container text-error font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
-            Clear Service Data
-          </button>
-        </section>
-      </div>
-
-    </main>
-
-    <!-- Mobile bottom nav -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-outline-variant/20 flex items-stretch" style="padding-bottom: env(safe-area-inset-bottom)">
-      <a class="mob-nav nav-link active flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="overview">
-        <span class="material-symbols-outlined" style="font-size:22px">dashboard</span>
-        <span class="label-xs" style="font-size:0.55rem">Run Sheet</span>
-      </a>
-      <a class="mob-nav nav-link flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="settings">
-        <span class="material-symbols-outlined" style="font-size:22px">manage_accounts</span>
-        <span class="label-xs" style="font-size:0.55rem">Settings</span>
-      </a>
-      <a onclick="doLogout()" class="mob-nav flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant nav-link">
-        <span class="material-symbols-outlined" style="font-size:22px">lock</span>
-        <span class="label-xs" style="font-size:0.55rem">Lock</span>
-      </a>
     </nav>
 
-  </div>
-</div><!-- /app -->
-
-<script>
-// ── Supabase ────────────────────────────────────────────
-const SUPABASE_URL  = 'https://kjsywrmlkwptonunvxep.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_mnr8Iyi6LXYut7l4qb-_Sg__QrpOQjO';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-
-// ── State ───────────────────────────────────────────────
-let _data    = {};
-let _config  = null;
-let _userId  = null;
-let _channel = null;
-
-// ── Auth ────────────────────────────────────────────────
-function showApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('wizard-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  document.getElementById('login-error').classList.add('hidden');
-  init();
-}
-
-let _authMode = 'login';
-
-function toggleAuthMode() {
-  _authMode = _authMode === 'login' ? 'signup' : 'login';
-  const isSignup = _authMode === 'signup';
-  document.getElementById('confirm-pw-wrap').classList.toggle('hidden', !isSignup);
-  document.getElementById('auth-btn').textContent = isSignup ? 'Create Account' : 'Sign In';
-  document.getElementById('auth-btn').onclick = isSignup ? doSignUp : doLogin;
-  document.getElementById('auth-toggle-text').textContent = isSignup ? 'Already have an account?' : "Don't have an account?";
-  document.getElementById('auth-toggle-btn').textContent = isSignup ? 'Sign in' : 'Create account';
-  ['login-error','signup-error','signup-success'].forEach(id => document.getElementById(id).classList.add('hidden'));
-}
-
-function showLogin() {
-  if (document.body.classList.contains('editing')) cancelEdit();
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('wizard-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('pw-input').value = '';
-  document.getElementById('email-input').value = '';
-  document.getElementById('confirm-pw-input').value = '';
-  if (_authMode !== 'login') toggleAuthMode();
-}
-
-async function doLogin() {
-  const email = document.getElementById('email-input').value.trim();
-  const pw    = document.getElementById('pw-input').value;
-  const err   = document.getElementById('login-error');
-  const btn   = document.getElementById('auth-btn');
-  btn.disabled = true; btn.textContent = 'Signing in…';
-  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
-  btn.disabled = false; btn.textContent = 'Sign In';
-  if (error) { err.classList.remove('hidden'); return; }
-  await loadRemoteData();
-  if (!_config) { showWizard(); return; }
-  applyTheme(_config.color);
-  subscribeRealtime();
-  showApp();
-}
-
-async function doSignUp() {
-  const email = document.getElementById('email-input').value.trim();
-  const pw    = document.getElementById('pw-input').value;
-  const cf    = document.getElementById('confirm-pw-input').value;
-  const errEl = document.getElementById('signup-error');
-  const sucEl = document.getElementById('signup-success');
-  const btn   = document.getElementById('auth-btn');
-  errEl.classList.add('hidden'); sucEl.classList.add('hidden');
-  if (!email) { errEl.textContent = 'Please enter an email.'; errEl.classList.remove('hidden'); return; }
-  if (pw.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.classList.remove('hidden'); return; }
-  if (pw !== cf) { errEl.textContent = 'Passwords do not match.'; errEl.classList.remove('hidden'); return; }
-  btn.disabled = true; btn.textContent = 'Creating account…';
-  const { error } = await sb.auth.signUp({ email, password: pw });
-  btn.disabled = false; btn.textContent = 'Create Account';
-  if (error) { errEl.textContent = error.message; errEl.classList.remove('hidden'); return; }
-  sucEl.classList.remove('hidden');
-}
-
-async function doLogout() {
-  if (_channel) { sb.removeChannel(_channel); _channel = null; }
-  await sb.auth.signOut();
-  _userId = null; _data = {}; _config = null;
-  showLogin();
-}
-
-async function changePassword() {
-  const nw  = document.getElementById('pw-new').value;
-  const cf  = document.getElementById('pw-confirm').value;
-  const msg = document.getElementById('pw-msg');
-  if (!nw)       { flash(msg, 'New password cannot be empty.', 'text-error'); return; }
-  if (nw !== cf) { flash(msg, 'Passwords do not match.', 'text-error'); return; }
-  const { error } = await sb.auth.updateUser({ password: nw });
-  if (error) { flash(msg, error.message, 'text-error'); return; }
-  flash(msg, 'Password updated.', 'text-primary');
-  ['pw-new','pw-confirm'].forEach(id => document.getElementById(id).value = '');
-}
-
-function flash(el, text, cls) {
-  el.textContent = text;
-  el.className = `text-sm font-medium ${cls}`;
-  el.classList.remove('hidden');
-  setTimeout(() => el.classList.add('hidden'), 3000);
-}
-
-// ── Data ────────────────────────────────────────────────
-function getData() { return _data; }
-
-function saveData(d) {
-  _data = d;
-  if (!_userId) return;
-  sb.from('run_sheets')
-    .upsert({ user_id: _userId, data: d, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-    .then(({ error }) => { if (error) console.error('Save error:', error); });
-}
-
-function saveOrgConfig(cfg) {
-  _config = cfg;
-  if (!_userId) return;
-  sb.from('run_sheets')
-    .upsert({ user_id: _userId, org_config: cfg, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-    .then(({ error }) => { if (error) console.error('Config save error:', error); });
-}
-
-async function loadRemoteData() {
-  const { data: { user } } = await sb.auth.getUser();
-  _userId = user.id;
-  const { data: row } = await sb.from('run_sheets')
-    .select('data, org_config')
-    .eq('user_id', _userId).single();
-  _data   = row?.data       || {};
-  _config = row?.org_config || null;
-}
-
-function subscribeRealtime() {
-  if (_channel) { sb.removeChannel(_channel); _channel = null; }
-  _channel = sb.channel('runsheet-' + _userId)
-    .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'run_sheets', filter: `user_id=eq.${_userId}` },
-      payload => {
-        _data = payload.new.data;
-        renderOverview();
-        const notes = document.getElementById('f-notes');
-        if (notes && document.activeElement !== notes) notes.value = _data.notes || '';
-      })
-    .subscribe();
-}
-
-// Enter key on login fields
-['pw-input','email-input','confirm-pw-input'].forEach(id =>
-  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') (_authMode === 'signup' ? doSignUp : doLogin)(); }));
-
-// Restore session on page load
-sb.auth.getSession().then(async ({ data: { session } }) => {
-  if (session) {
-    await loadRemoteData();
-    if (!_config) { showWizard(); return; }
-    applyTheme(_config.color);
-    subscribeRealtime();
-    showApp();
-  }
-});
-
-// ── Theme ────────────────────────────────────────────────
-function applyTheme(hex) {
-  let s = document.getElementById('org-theme');
-  if (!s) { s = document.createElement('style'); s.id = 'org-theme'; document.head.appendChild(s); }
-  s.textContent = `
-    .bg-primary { background-color: ${hex} !important; }
-    .text-primary { color: ${hex} !important; }
-    .border-primary { border-color: ${hex} !important; }
-    .f-edit:focus { border-bottom-color: ${hex} !important; }
-    .nav-link.active { color: ${hex} !important; border-right-color: ${hex} !important; }
-    .mob-nav.active { border-top-color: ${hex} !important; }
-    #wiz-card { border-color: ${hex} !important; }
-  `;
-  if (_config) {
-    document.title = `Sound Production | ${_config.name}`;
-    ['sidebar-church-name','header-church-name'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = _config.name;
-    });
-  }
-}
-
-// ── Wizard ───────────────────────────────────────────────
-let _wizStep = 1;
-const WIZ_TOTAL = 4;
-
-// Default config pre-populated with CCA's setup so existing users just click Finish
-let _wiz = {
-  name: '',
-  color: '#15422e',
-  console_channels: 24,
-  inputs: [
-    {location:'Piano',       default_role:'Lead Vocals'},
-    {location:'Stage Left',  default_role:''},
-    {location:'Altar',       default_role:''},
-    {location:'Pulpit',      default_role:''},
-    {location:'Organ',       default_role:''},
-    {location:'Choir',       default_role:''},
-    {location:'Choir',       default_role:''}
-  ],
-  headsets: [
-    {label:'Headset 1', role:'Clergy'},
-    {label:'Headset 2', role:'Clergy'}
-  ],
-  wireless: [
-    {label:'Wireless 1', role:'Podium / Reader'},
-    {label:'Wireless 2', role:'Announcements'},
-    {label:'Wireless 3', role:'Flexible'},
-    {label:'Wireless 4', role:'Flexible'}
-  ]
-};
-
-function showWizard() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('wizard-screen').style.display = 'flex';
-  _wizStep = 1;
-  renderWizStep();
-}
-
-function renderWizStep() {
-  // Step dots
-  for (let i = 1; i <= WIZ_TOTAL; i++) {
-    const dot = document.getElementById(`wiz-dot-${i}`);
-    if (dot) dot.className = `w-2 h-2 rounded-full ${i === _wizStep ? 'bg-primary' : 'bg-outline-variant'}`;
-  }
-  document.getElementById('wiz-step-label').textContent = `Step ${_wizStep} of ${WIZ_TOTAL}`;
-  document.getElementById('wiz-back').style.display = _wizStep === 1 ? 'none' : 'block';
-  document.getElementById('wiz-next').textContent = _wizStep === WIZ_TOTAL ? 'Finish Setup' : 'Next →';
-
-  const content = document.getElementById('wiz-content');
-  if (_wizStep === 1) {
-    content.innerHTML = `
-      <h3 class="font-headline font-bold text-xl mb-1">Welcome! Let's set up your church.</h3>
-      <p class="text-on-surface-variant text-sm mb-6">This takes about a minute.</p>
-      <div class="space-y-4">
-        <div>
-          <label class="label-xs text-on-surface-variant block mb-1.5">Church Name</label>
-          <input id="wiz-name" type="text" class="f-edit" style="display:block" placeholder="e.g. Christ Church Anglican GR" value="${esc(_wiz.name)}" oninput="wizPreviewName(this.value)"/>
-          <p id="wiz-name-err" class="text-xs text-error font-medium mt-1 hidden">Please enter your church name.</p>
+    <!-- NEW LIGHT EDITORIAL HERO -->
+    <section class="hero-section light-section pt-40 pb-0 relative overflow-hidden" style="padding-top: 12rem;">
+        <!-- Liturgical Season Context (Red for Palm Sunday matching the mockup) -->
+        <div class="liturgical-glow-container">
+            <div class="liturgical-glow-red"></div>
         </div>
-        <div>
-          <label class="label-xs text-on-surface-variant block mb-1.5">Theme Colour</label>
-          <div class="flex items-center gap-3">
-            <input id="wiz-color" type="color" class="f-edit" style="display:block; max-width:80px" value="${esc(_wiz.color)}" oninput="wizPreviewColor(this.value)"/>
-            <span class="text-on-surface-variant text-xs">This sets your button and accent colour.</span>
-          </div>
+        <div class="container relative z-10">
+            <div class="hero-split grid-2 gap-16 items-center">
+                <div class="hero-left">
+                    <h1 class="font-manrope text-dark leading-none tracking-tight font-medium" style="font-size: 5.5rem; letter-spacing: -0.06em; line-height: 1;">
+                        The production<br>dashboard for<br>liturgical churches.
+                    </h1>
+                </div>
+                <div class="hero-right flex flex-col justify-center pl-8 pt-4">
+                    <p class="text-lg text-dark-muted mb-8 leading-relaxed font-body" style="font-size: 1.15rem;">
+                        Ordo is the production dashboard built for liturgical church teams — full order of service, wireless mic assignments, stage inputs, production notes, and liturgical calendar, organized and ready before the first cue.
+                    </p>
+                    <div class="btn-group justify-start mt-8">
+                        <a href="#getstarted" class="btn btn-accent">GET A DEMO <span class="arrow">↗</span></a>
+                        <a href="/app/" class="btn btn-secondary">SIGN UP FOR FREE <span class="arrow">↗</span></a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trusted By Band -->
+            <div class="trusted-band mt-32 flex items-center justify-between pb-12" style="margin-top: 8rem; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 3rem;">
+                <span class="text-sm font-body text-dark-muted w-48 leading-tight font-medium">Trusted by the best<br>leading churches:</span>
+                <div class="logos flex gap-12 text-2xl font-manrope font-bold text-dark-muted opacity-30 items-center justify-end flex-1" style="opacity: 0.3; justify-content: flex-end; gap: 3rem; font-size: 1.5rem; flex: 1; align-items: center; display: flex;">
+                    <span>Christ Church</span>
+                    <span>Grace Anglican</span>
+                    <span>Holy Trinity</span>
+                    <span>Redeemer</span>
+                </div>
+            </div>
+            
+            <!-- Dashboard Full-Bleed Graphic -->
+            <div class="hero-graphic-bleed cathedral-bg mt-16 relative">
+                <div class="cathedral-overlay"></div>
+                <!-- Dashboard Mockup Graphic -->
+                <div class="hero-mockup-wrapper fade-in-up relative z-10" style="max-width: 1000px; margin: 0 auto;">
+                <div class="app-window mx-auto" style="box-shadow: 0 40px 100px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="app-sidebar hidden-mobile">
+                        <div class="app-sidebar-header">
+                            <strong>Christ Church Anglican GR</strong>
+                            <span class="text-xs mt-1 block tracking-widest text-dark-muted">SOUND PRODUCTION</span>
+                        </div>
+                        <div class="app-nav">
+                            <div class="nav-item active">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                                RUN SHEET
+                            </div>
+                        </div>
+                        <div class="app-sidebar-footer">
+                            <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> SETTINGS</div>
+                            <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> LOCK</div>
+                        </div>
+                    </div>
+                    <div class="app-main">
+                        <div class="app-header">
+                            <div class="header-title">SOUND PRODUCTION</div>
+                            <div class="header-meta hidden-mobile">
+                                MARCH 29, 2026<span style="margin: 0 0.75rem;">·</span>8:37 PM<span style="margin: 0 0.75rem;">·</span><span class="dot-red"></span> PALM SUNDAY
+                            </div>
+                            <div class="header-action">Edit</div>
+                        </div>
+                        <div class="app-content">
+                            <div class="content-section">
+                                <div class="section-label">WIRELESS MICROPHONES</div>
+                                <div class="mic-grid">
+                                    <div class="mic-card">
+                                        <div class="mic-card-header">HEADSET 1 · CLERGY</div>
+                                        <div class="mic-line"></div>
+                                    </div>
+                                    <div class="mic-card">
+                                        <div class="mic-card-header">HEADSET 2 · CLERGY</div>
+                                        <div class="mic-line"></div>
+                                    </div>
+                                    <div class="mic-card">
+                                        <div class="mic-card-header">WIRELESS 1 · PODIUM</div>
+                                        <div class="mic-line"></div>
+                                    </div>
+                                    <div class="mic-card">
+                                        <div class="mic-card-header">WIRELESS 2 · ANNOUNCEMENTS</div>
+                                        <div class="mic-line"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="content-section hidden-mobile">
+                                <div class="section-label">STAGE INPUTS — 7 INPUTS</div>
+                                <div class="input-table">
+                                     <div class="input-row header">
+                                         <span>INPUT</span><span>LOCATION</span><span>INSTRUMENT / ROLE</span><span>MUSICIAN</span><span>ROUTING</span>
+                                     </div>
+                                     <div class="input-row">
+                                         <span class="input-num">01</span>
+                                         <div class="input-cell-box uppercase">PIANO</div>
+                                         <div class="input-cell-box font-semibold">Lead Vocals</div>
+                                         <div class="input-cell-box italic text-dark-muted">Unassigned</div>
+                                         <div class="input-cell-box">—</div>
+                                     </div>
+                                     <div class="input-row">
+                                         <span class="input-num">02</span>
+                                         <div class="input-cell-box uppercase">STAGE LEFT</div>
+                                         <div class="input-cell-box italic text-dark-muted">Not set</div>
+                                         <div class="input-cell-box italic text-dark-muted">Unassigned</div>
+                                         <div class="input-cell-box">—</div>
+                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>`;
-  } else if (_wizStep === 2) {
-    const opts = [8,16,24,32,48,64].map(n =>
-      `<option value="${n}"${n === _wiz.console_channels ? ' selected' : ''}>${n} channels</option>`
-    ).join('');
-    content.innerHTML = `
-      <h3 class="font-headline font-bold text-xl mb-1">Your Console</h3>
-      <p class="text-on-surface-variant text-sm mb-6">How many channels does your mixing console have?</p>
-      <div>
-        <label class="label-xs text-on-surface-variant block mb-1.5">Channel Count</label>
-        <select id="wiz-channels" class="f-edit" style="display:block; max-width:200px">${opts}</select>
-      </div>`;
-  } else if (_wizStep === 3) {
-    content.innerHTML = `
-      <h3 class="font-headline font-bold text-xl mb-1">Stage Inputs</h3>
-      <p class="text-on-surface-variant text-sm mb-4">How many inputs does your stage have? Give each a location and optional default role.</p>
-      <div class="flex items-center gap-3 mb-4">
-        <label class="label-xs text-on-surface-variant">Number of inputs</label>
-        <input id="wiz-input-count" type="number" min="1" max="24" value="${_wiz.inputs.length}" class="f-edit" style="display:block; max-width:70px" oninput="wizUpdateInputCount(this.value)"/>
-      </div>
-      <div class="flex gap-2 mb-1">
-        <span class="label-xs text-on-surface-variant w-6 flex-shrink-0"></span>
-        <span class="label-xs text-on-surface-variant flex-1">Location</span>
-        <span class="label-xs text-on-surface-variant flex-1">Default Role</span>
-        <span class="w-4"></span>
-      </div>
-      <div id="wiz-input-rows" class="space-y-2 max-h-56 overflow-y-auto">${wizInputRows()}</div>`;
-  } else if (_wizStep === 4) {
-    content.innerHTML = `
-      <h3 class="font-headline font-bold text-xl mb-1">Wireless Microphones</h3>
-      <p class="text-on-surface-variant text-sm mb-5">Configure your headsets and wireless/handheld mics.</p>
-      <div class="space-y-5">
-        <div>
-          <div class="flex items-center gap-3 mb-2">
-            <label class="label-xs text-on-surface-variant">Headsets</label>
-            <input id="wiz-hs-count" type="number" min="0" max="8" value="${_wiz.headsets.length}" class="f-edit" style="display:block; max-width:60px" oninput="wizUpdateHsCount(this.value)"/>
-          </div>
-          <div id="wiz-hs-rows" class="space-y-2">${wizHsRows()}</div>
+    </section>
+
+    <!-- PROBLEM SECTION -->
+    <section class="problem-section light-section border-top section-padding override-bottom-padding">
+        <div class="container relative z-10">
+            <div class="grid-2 gap-12 items-center">
+                <div>
+                    <h2 class="font-manrope text-dark tracking-tight leading-tight" style="font-size: 3.5rem;">The paper order of service<br>has had a good run.</h2>
+                    <p class="text-lg text-dark-muted mt-6 max-w-lg">
+                        Coffee-stained. Scribbled over. Updated by the wrong person the night before. Passed around in a group chat no one can find at 8:45 AM.
+                    </p>
+                    <p class="text-lg text-dark-muted mt-4 max-w-lg">
+                        Your production team is skilled. They deserve tooling that matches.
+                    </p>
+                </div>
+                <div class="problem-visuals hidden-mobile">
+                    <div class="visual-box visual-box-1" style="background: #ffffff; color: var(--text-dark); border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 1.5rem; border-radius: 8px;">
+                        <span class="font-semibold text-sm tracking-widest uppercase">Run Sheet v4_FINAL_real.pdf</span>
+                    </div>
+                    <div class="visual-box visual-box-2" style="background: #fdfdf9; color: var(--text-dark-muted); border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 1.5rem; border-radius: 8px;">
+                        <span class="text-sm">Group Chat: "Did we change the mic?"</span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div>
-          <div class="flex items-center gap-3 mb-2">
-            <label class="label-xs text-on-surface-variant">Wireless / Handhelds</label>
-            <input id="wiz-w-count" type="number" min="0" max="12" value="${_wiz.wireless.length}" class="f-edit" style="display:block; max-width:60px" oninput="wizUpdateWCount(this.value)"/>
-          </div>
-          <div id="wiz-w-rows" class="space-y-2">${wizWRows()}</div>
+    </section>
+
+    <!-- LIGHT SECTION: BENTO GRID (FEATURES) -->
+    <section id="features" class="bento-section light-section border-top section-padding-xl">
+        <div class="container">
+            <div class="text-center mb-16">
+                <span class="text-xs font-semibold tracking-widest uppercase text-dark-muted">Introducing Ordo</span>
+                <h2 class="font-manrope text-dark mt-4 tracking-tight leading-tight" style="font-size: 3.5rem;">One organized place for everything your team needs to know.</h2>
+                <p class="text-lg text-dark-muted mt-4 mx-auto max-w-lg">
+                    Ordo is the full production dashboard built around the specific rhythms of the liturgical service. The complete order of service, wireless mic assignments, stage inputs, production notes, and liturgical calendar — all in a single, immaculately organized interface.
+                </p>
+            </div>
+
+            <div class="bento-grid">
+                <!-- Large Card -->
+                <div class="bento-col-span-2 bento-card-light">
+                    <div class="bento-content">
+                        <h3 class="font-manrope text-dark tracking-tight text-3xl">Your service, sequenced and production-ready.</h3>
+                        <p>Ordo is the complete picture of Sunday morning — order of service, wireless mic assignments, stage inputs, musician roles, and production cues, all organized in one clean, editable view that's live for every team member the moment you save.</p>
+                    </div>
+                    <div class="bento-graphic graphic-bottom">
+                         <div class="mockup-row-ui">
+                             <span class="tag">09:00 AM</span>
+                             <span class="title">Processional Hymn</span>
+                             <span class="tag-outline">All Mics Live</span>
+                         </div>
+                         <div class="mockup-row-ui">
+                             <span class="tag">09:05 AM</span>
+                             <span class="title">Collect of Purity</span>
+                             <span class="tag-outline">Mic 1 Only</span>
+                         </div>
+                    </div>
+                </div>
+
+                <!-- Small Cards -->
+                <div class="bento-card-light">
+                    <div class="bento-content">
+                        <span class="badge-accent">Wireless Microphones</span>
+                        <h3 class="font-manrope text-dark tracking-tight text-2xl mt-4">Every mic accounted for.</h3>
+                        <p>Assign each wireless channel to a person and a role. Headsets, handhelds, lavalieres — tracked by name, not by memory.</p>
+                    </div>
+                </div>
+
+                <div class="bento-card-light">
+                    <div class="bento-content">
+                        <span class="badge-accent">Stage Inputs</span>
+                        <h3 class="font-manrope text-dark tracking-tight text-2xl mt-4">The board, mapped.</h3>
+                        <p>Log every instrument, musician, and routing assignment for the service in a clean, scannable reference.</p>
+                    </div>
+                </div>
+
+                 <div class="bento-card-light">
+                    <div class="bento-content">
+                        <span class="badge-accent">Planning Center</span>
+                        <h3 class="font-manrope text-dark tracking-tight text-2xl mt-4">Your plan, imported.</h3>
+                        <p>Import your order of service and team assignments directly — dashboard built before you touch the board.</p>
+                    </div>
+                </div>
+
+                 <div class="bento-card-light">
+                    <div class="bento-content">
+                        <span class="badge-accent">Liturgical Calendar</span>
+                        <h3 class="font-manrope text-dark tracking-tight text-2xl mt-4">Always in season.</h3>
+                        <p>Ordo displays the current liturgical season so your team is oriented within the church calendar automatically.</p>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>`;
-  }
-}
+    </section>
 
-function wizInputRows() {
-  return _wiz.inputs.map((inp, i) => `
-    <div class="flex gap-2 items-center">
-      <span class="label-xs text-on-surface-variant w-6 text-center flex-shrink-0">${i+1}</span>
-      <input id="wiz-il-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="e.g. Piano" value="${esc(inp.location)}"/>
-      <input id="wiz-ir-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="e.g. Lead Vocals" value="${esc(inp.default_role)}"/>
-    </div>`).join('');
-}
-function wizHsRows() {
-  return _wiz.headsets.map((h, i) => `
-    <div class="flex gap-2 items-center">
-      <input id="wiz-hl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(h.label)}"/>
-      <input id="wiz-hr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(h.role)}"/>
-    </div>`).join('');
-}
-function wizWRows() {
-  return _wiz.wireless.map((w, i) => `
-    <div class="flex gap-2 items-center">
-      <input id="wiz-wl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(w.label)}"/>
-      <input id="wiz-wr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(w.role)}"/>
-    </div>`).join('');
-}
+    <!-- LIGHT SECTION: PRAYER BOOK INTEGRATION -->
+    <section id="prayer-book" class="liturgy-section light-section border-top section-padding-xl relative overflow-hidden">
+        <div class="container">
+            <div class="text-center mb-16">
+                <span class="text-xs font-semibold tracking-widest uppercase text-dark-muted">Liturgical Intelligence</span>
+                <h2 class="font-manrope text-dark mt-4 tracking-tight leading-tight" style="font-size: 3.5rem;">Built around the book you use.</h2>
+                <p class="text-lg text-dark-muted mt-4 mx-auto max-w-lg">
+                    Ordo doesn't just know the season—it knows the rubrics. Select your tradition during setup to automatically align your dashboard with the correct lectionary, proper texts, and service templates.
+                </p>
+            </div>
 
-function wizPreviewName(val) { /* live preview — no-op needed for now */ }
-function wizPreviewColor(hex) {
-  document.getElementById('wiz-card').style.borderColor = hex;
-}
+            <!-- 2x2 Feature Grid -->
+            <div class="grid-2 gap-12 mt-16 mx-auto" style="max-width: 900px;">
+                <div class="flex flex-col">
+                    <h4 class="font-manrope text-dark tracking-tight text-2xl font-bold">Structured by tradition.</h4>
+                    <p class="text-dark-muted mt-2">Service templates know their own structure. A Sunday Eucharist maps directly to the run sheet with the correct liturgical sequence and naming.</p>
+                </div>
+                <div class="flex flex-col">
+                    <h4 class="font-manrope text-dark tracking-tight text-2xl font-bold">The Collect of the Day.</h4>
+                    <p class="text-dark-muted mt-2">The correct Collect flows directly from the lectionary to the dashboard. The production team can follow exactly what is being prayed, exactly when it happens.</p>
+                </div>
+                <div class="flex flex-col">
+                    <h4 class="font-manrope text-dark tracking-tight text-2xl font-bold">Integrated lectionary.</h4>
+                    <p class="text-dark-muted mt-2">The Old Testament, Psalm, Epistle, and Gospel display automatically for each service. The team knows the passage, the reader, and the required microphones.</p>
+                </div>
+                <div class="flex flex-col">
+                    <h4 class="font-manrope text-dark tracking-tight text-2xl font-bold">Canticles and propers.</h4>
+                    <p class="text-dark-muted mt-2">When the calendar dictates specific canticles or proper texts for Morning and Evening Prayer, Ordo pre-populates the correct music items.</p>
+                </div>
+            </div>
 
-function wizUpdateInputCount(val) {
-  wizSyncInputs();
-  const n = Math.max(1, Math.min(24, parseInt(val) || 1));
-  while (_wiz.inputs.length < n) _wiz.inputs.push({location:'', default_role:''});
-  _wiz.inputs = _wiz.inputs.slice(0, n);
-  document.getElementById('wiz-input-rows').innerHTML = wizInputRows();
-}
-function wizUpdateHsCount(val) {
-  wizSyncWireless();
-  const n = Math.max(0, Math.min(8, parseInt(val) || 0));
-  while (_wiz.headsets.length < n) _wiz.headsets.push({label:`Headset ${_wiz.headsets.length+1}`, role:''});
-  _wiz.headsets = _wiz.headsets.slice(0, n);
-  document.getElementById('wiz-hs-rows').innerHTML = wizHsRows();
-}
-function wizUpdateWCount(val) {
-  wizSyncWireless();
-  const n = Math.max(0, Math.min(12, parseInt(val) || 0));
-  while (_wiz.wireless.length < n) _wiz.wireless.push({label:`Wireless ${_wiz.wireless.length+1}`, role:''});
-  _wiz.wireless = _wiz.wireless.slice(0, n);
-  document.getElementById('wiz-w-rows').innerHTML = wizWRows();
-}
+            <!-- Supported Traditions Table -->
+            <div class="mt-20 pt-16 border-top">
+                <h4 class="text-xs font-semibold tracking-widest uppercase text-dark-muted mb-8 text-center text-dark">Supported Traditions</h4>
+                <div class="grid-3 text-center">
+                    
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">BCP 2019</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">ACNA Anglican</p>
+                    </div>
+                    
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">BCP 1979</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">TEC Episcopal</p>
+                    </div>
+                    
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">BCP 1662</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">Traditional Anglican</p>
+                    </div>
 
-function wizSyncInputs() {
-  _wiz.inputs.forEach((_, i) => {
-    const l = document.getElementById(`wiz-il-${i}`);
-    const r = document.getElementById(`wiz-ir-${i}`);
-    if (l) _wiz.inputs[i].location     = l.value;
-    if (r) _wiz.inputs[i].default_role = r.value;
-  });
-}
-function wizSyncWireless() {
-  _wiz.headsets.forEach((_, i) => {
-    const l = document.getElementById(`wiz-hl-${i}`);
-    const r = document.getElementById(`wiz-hr-${i}`);
-    if (l) _wiz.headsets[i].label = l.value;
-    if (r) _wiz.headsets[i].role  = r.value;
-  });
-  _wiz.wireless.forEach((_, i) => {
-    const l = document.getElementById(`wiz-wl-${i}`);
-    const r = document.getElementById(`wiz-wr-${i}`);
-    if (l) _wiz.wireless[i].label = l.value;
-    if (r) _wiz.wireless[i].role  = r.value;
-  });
-}
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">Roman Missal (OF)</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">Catholic</p>
+                    </div>
 
-function wizSaveCurrentStep() {
-  if (_wizStep === 1) {
-    const name = document.getElementById('wiz-name')?.value.trim();
-    const errEl = document.getElementById('wiz-name-err');
-    if (!name) { errEl?.classList.remove('hidden'); return false; }
-    errEl?.classList.add('hidden');
-    _wiz.name  = name;
-    _wiz.color = document.getElementById('wiz-color')?.value || _wiz.color;
-  } else if (_wizStep === 2) {
-    _wiz.console_channels = parseInt(document.getElementById('wiz-channels')?.value) || 24;
-  } else if (_wizStep === 3) {
-    wizSyncInputs();
-    // Clean up empty location names
-    _wiz.inputs = _wiz.inputs.map((inp, i) => ({
-      location:     inp.location.trim()     || `Input ${i+1}`,
-      default_role: inp.default_role.trim()
-    }));
-  } else if (_wizStep === 4) {
-    wizSyncWireless();
-    _wiz.headsets = _wiz.headsets.map((h, i) => ({
-      label: h.label.trim() || `Headset ${i+1}`,
-      role:  h.role.trim()
-    }));
-    _wiz.wireless = _wiz.wireless.map((w, i) => ({
-      label: w.label.trim() || `Wireless ${i+1}`,
-      role:  w.role.trim()
-    }));
-  }
-  return true;
-}
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">APBA</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">Anglican Church of Australia</p>
+                    </div>
 
-function wizBack() {
-  wizSaveCurrentStep();
-  _wizStep--;
-  renderWizStep();
-}
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">BAS</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">Anglican Church of Canada</p>
+                    </div>
+                    
+                </div>
+            </div>
+            
+        </div>
+    </section>
 
-function wizNext() {
-  if (!wizSaveCurrentStep()) return;
-  if (_wizStep < WIZ_TOTAL) {
-    _wizStep++;
-    renderWizStep();
-  } else {
-    finishWizard();
-  }
-}
+    <!-- LIGHT SECTION: Huge Number & Social Proof -->
+    <section class="social-proof-section light-section border-top section-padding-xl">
+        <div class="container">
+            <div class="grid-2 gap-16 items-center flex-mobile-reverse">
+                <div>
+                    <h2 class="font-manrope text-dark tracking-tight leading-tight" style="font-size: 4rem;">Trusted by teams who take Sunday morning seriously.</h2>
+                    <div class="testimonial-dark-quote mt-8" style="border-left-color: var(--accent);">
+                        <p class="text-xl text-dark-muted italic">"Because of Ordo, our sound engineers and production volunteers are completely synced without saying a word. We're spending our mornings tuning the mix, not hunting down the run sheet."</p>
+                        <div class="mt-6 font-semibold text-dark tracking-widest text-sm uppercase">David T.</div>
+                        <div class="text-xs text-dark-muted uppercase tracking-widest">Production Director &middot; St. Jude's Parish</div>
+                    </div>
+                </div>
+                <div class="huge-number-wrapper text-right-desktop">
+                    <div class="font-manrope text-dark tracking-tight leading-none" style="font-size: 8rem;">100<span class="text-dark-muted" style="font-size: 4rem;">%</span></div>
+                    <p class="text-xl font-medium mt-4 text-dark">Clarity before the service.<br>Calm during it.</p>
+                    <p class="text-sm text-dark-muted mt-2">Every mic assigned. Every input mapped.<br>Every cue noted. Ready.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-function finishWizard() {
-  saveOrgConfig(_wiz);
-  applyTheme(_wiz.color);
-  subscribeRealtime();
-  showApp();
-}
+    <!-- LIGHT SECTION: TECH / HOW IT WORKS -->
+    <section id="how-it-works" class="tech-section light-section border-top section-padding-xl relative overflow-hidden">
+        <div class="container relative z-10 text-center">
+            <h2 class="font-manrope text-dark tracking-tight leading-tight" style="font-size: 3.5rem;">Designed for the environment<br>you're actually working in.</h2>
+            <p class="text-lg text-dark-muted mt-6 max-w-xl mx-auto">
+                Most production tools are built for stadium tours, broadcast studios, or modern concert-style worship. They throw endless settings at you when all you need is clarity. Ordo is designed specifically for the traditional church—reducing the noise and cognitive load of a high-pressure live environment. The result is an interface that feels unhurried, even when the service isn't.
+            </p>
 
-// ── Nav ─────────────────────────────────────────────────
-function goTo(id) {
-  document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.section === id));
-  document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === 'section-' + id));
-  if (id === 'settings') loadSettingsForm();
-}
-document.querySelectorAll('[data-section]').forEach(l => l.addEventListener('click', () => goTo(l.dataset.section)));
+            <div class="setup-grid mt-20">
+                <div class="setup-step text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.02);">
+                    <div class="font-manrope text-dark opacity-30 text-3xl font-bold">01</div>
+                    <h4 class="text-dark mt-4 font-bold text-lg tracking-tight">Create account</h4>
+                    <p class="text-sm text-dark-muted mt-2">Sign in with your email.</p>
+                </div>
+                <div class="setup-step text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.02);">
+                    <div class="font-manrope text-dark opacity-30 text-3xl font-bold">02</div>
+                    <h4 class="text-dark mt-4 font-bold text-lg tracking-tight">Name church</h4>
+                    <p class="text-sm text-dark-muted mt-2">Dashboard auto-configured.</p>
+                </div>
+                <div class="setup-step text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.02);">
+                    <div class="font-manrope text-dark opacity-30 text-3xl font-bold">03</div>
+                    <h4 class="text-dark mt-4 font-bold text-lg tracking-tight">Import Plan</h4>
+                    <p class="text-sm text-dark-muted mt-2">Connect Planning Center.</p>
+                </div>
+                <div class="setup-step text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.02);">
+                    <div class="font-manrope text-dark opacity-30 text-3xl font-bold">04</div>
+                    <h4 class="text-dark mt-4 font-bold text-lg tracking-tight">Build board</h4>
+                    <p class="text-sm text-dark-muted mt-2">Mics, inputs, roles.</p>
+                </div>
+                 <div class="setup-step text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.02);">
+                    <div class="font-manrope text-dark opacity-30 text-3xl font-bold">05</div>
+                    <h4 class="text-dark mt-4 font-bold text-lg tracking-tight">Go live</h4>
+                    <p class="text-sm text-dark-muted mt-2">Real-time sync for everyone.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-// ── Liturgical Calendar ──────────────────────────────────
-const LITURGICAL_COLORS = {
-  White:'#e8e0d0', Red:'#b33030', Purple:'#5b2d82',
-  Green:'#2d6a35', Rose:'#c2607a',
-};
+    <!-- FOOTER CTA -->
+    <section class="footer-cta-section light-section border-top section-padding-xl relative overflow-hidden">
+        <div class="container relative z-10 grid-2 gap-12 items-center">
+            <div>
+                <h1 class="font-manrope text-dark tracking-tight leading-tight font-medium" style="font-size: 4rem;">The board is set.<br>Let's begin.</h1>
+                <div class="btn-group mt-8 justify-start">
+                    <a href="#getstarted" class="btn btn-accent">GET A DEMO <span class="arrow">↗</span></a>
+                </div>
+            </div>
+            
+            <div class="pricing-cards ml-auto">
+                <div class="text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 3rem; border-radius: 8px; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+                    <h4 class="text-dark-muted text-xs uppercase tracking-widest font-semibold">Pricing</h4>
+                    <div class="font-manrope text-dark mt-4 leading-none" style="font-size: 4.5rem; font-weight: 300;">$0 <span class="text-sm text-dark-muted font-body">to start</span></div>
+                    <p class="text-sm text-dark-muted mt-6 border-top pt-4">No credit card required. Set up in 5 minutes.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-function getLiturgicalDay(date) {
-  const dow  = date.getDay();
-  const y    = date.getFullYear();
-  const ORDS = ['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth',
-                'Tenth','Eleventh','Twelfth','Thirteenth','Fourteenth','Fifteenth','Sixteenth',
-                'Seventeenth','Eighteenth','Nineteenth','Twentieth','Twenty-First','Twenty-Second',
-                'Twenty-Third','Twenty-Fourth','Twenty-Fifth','Twenty-Sixth','Twenty-Seventh'];
-  const WDAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  function add(d, n)  { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
-  function noon(d)    { return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); }
-  function dp(a, b)   { return Math.round((+noon(a) - +noon(b)) / 86400000); }
-  function same(a, b) { return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
-  function computeEaster(yr) {
-    const a=yr%19,b=Math.floor(yr/100),c=yr%100,d=Math.floor(b/4),e=b%4;
-    const f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
-    const h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4;
-    const l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
-    return new Date(yr, Math.floor((h+l-7*m+114)/31)-1, ((h+l-7*m+114)%31)+1);
-  }
-  function computeAdvent1(yr) {
-    const d25=new Date(yr,11,25); return add(d25, -(21+d25.getDay()));
-  }
-  for (const ey of [y, y-1]) {
-    const E = computeEaster(ey);
-    const d = dp(date, E);
-    if (d === -49 && dow === 0) return { name:'The Last Sunday after the Epiphany', color:'White' };
-    if (d < -46) continue;
-    if (d === -46) return { name:'Ash Wednesday', color:'Purple' };
-    if (d >= -45 && d <= -43) return { name:`${WDAY[dow]} after Ash Wednesday`, color:'Purple' };
-    if (d >= -42 && d <= -8) {
-      const wk  = Math.ceil((d + 43) / 7);
-      const col = (wk===4 && dow===0) ? 'Rose' : 'Purple';
-      if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday of Lent`, color:col };
-      return { name:`${WDAY[dow]}, ${ORDS[wk-1]} Week of Lent`, color:'Purple' };
-    }
-    const HW = {'-7':['Palm Sunday','Red'],'-6':['Monday in Holy Week','Red'],
-                '-5':['Tuesday in Holy Week','Red'],'-4':['Wednesday in Holy Week','Red'],
-                '-3':['Maundy Thursday','White'],'-2':['Good Friday','Red'],'-1':['Holy Saturday','White']};
-    if (HW[d]) return { name:HW[d][0], color:HW[d][1] };
-    if (d === 0) return { name:'Easter Day', color:'White' };
-    if (d >= 1 && d <= 6) return { name:`${WDAY[dow]} of Easter Week`, color:'White' };
-    if (d === 39) return { name:'Ascension Day', color:'White' };
-    if (d >= 7 && d <= 48) {
-      const wk = Math.floor(d/7) + 1;
-      if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday of Easter`, color:'White' };
-      return { name:`${WDAY[dow]}, ${ORDS[Math.floor(d/7)]||''} Week of Easter`, color:'White' };
-    }
-    if (d === 49) return { name:'The Day of Pentecost', color:'Red' };
-    if (d === 56) return { name:'Trinity Sunday', color:'White' };
-    if (d > 56) {
-      const adv = computeAdvent1(ey);
-      if (dp(date, adv) < 0) {
-        const wk = Math.floor((d - 49) / 7);
-        if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday after Pentecost`, color:'Green' };
-        return { name:`${WDAY[dow]}, ${ORDS[wk-1]} Week after Pentecost`, color:'Green' };
-      }
-    }
-  }
-  for (const ay of [y, y-1]) {
-    const adv = computeAdvent1(ay);
-    const d   = dp(date, adv);
-    if (d < 0 || d >= 28) continue;
-    const wk  = Math.floor(d / 7) + 1;
-    const col = (wk===3 && dow===0) ? 'Rose' : 'Purple';
-    if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday of Advent`, color:col };
-    return { name:`${WDAY[dow]}, ${ORDS[wk-1]} Week of Advent`, color:'Purple' };
-  }
-  for (const cy of [y, y-1]) {
-    const xmas = new Date(cy, 11, 25);
-    const dx   = dp(date, xmas);
-    if (dx === 0) return { name:'Christmas Day', color:'White' };
-    if (dx > 0 && dx <= 11) {
-      if (date.getMonth()===0 && date.getDate()===1) return { name:'Holy Name of Jesus', color:'White' };
-      function add2(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
-      const s1 = add2(xmas, (7 - xmas.getDay()) % 7 || 7);
-      if (dow===0 && same(date,s1)) return { name:'The First Sunday of Christmas', color:'White' };
-      if (dow===0 && same(date, add2(s1,7))) return { name:'The Second Sunday of Christmas', color:'White' };
-      return { name:'Christmastide', color:'White' };
-    }
-    const epiph = new Date(cy+1, 0, 6);
-    if (same(date, epiph)) return { name:'The Epiphany', color:'White' };
-    const de = dp(date, epiph);
-    if (de > 0 && de <= 56) {
-      const epDow   = epiph.getDay();
-      function add3(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
-      const baptism = add3(epiph, epDow===0 ? 7 : 7-epDow);
-      if (same(date, baptism)) return { name:'The Baptism of Our Lord', color:'White' };
-      const db = dp(date, baptism);
-      if (db > 0) {
-        const wk = Math.floor(db/7) + 1;
-        if (dow===0) return { name:`The ${ORDS[wk-1]} Sunday of Epiphany`, color:'Green' };
-        const ww = Math.floor(db/7) + 2;
-        return { name:`${WDAY[dow]}, ${ORDS[ww-2]||ORDS[0]} Week of Epiphany`, color:'Green' };
-      }
-      return { name:`${WDAY[dow]} after the Epiphany`, color:'White' };
-    }
-  }
-  return null;
-}
+    <footer class="light-footer border-top">
+        <div class="container py-8 flex justify-between items-center footer-mobile-stack">
+            <div class="flex items-center gap-4">
+                <div class="logo text-lg text-dark">Ordo</div>
+                <div class="text-xs text-dark-muted">&copy; 2026. Built for production teams.</div>
+            </div>
+            <div class="flex gap-6 text-xs text-dark font-semibold tracking-widest uppercase">
+                <a href="#features" class="text-dark text-decoration-none hover-opacity">Features</a>
+                <a href="/app/" class="text-dark text-decoration-none hover-opacity">Sign in</a>
+            </div>
+        </div>
+    </footer>
 
-function showLiturgicalDay() {
-  const result = getLiturgicalDay(new Date());
-  if (!result) return;
-  const wrap = document.getElementById('header-liturgical');
-  const chip = document.getElementById('header-liturgical-chip');
-  const name = document.getElementById('header-liturgical-name');
-  if (!wrap) return;
-  chip.style.background = LITURGICAL_COLORS[result.color] || '#888';
-  name.textContent      = result.name;
-  wrap.classList.remove('hidden');
-  wrap.classList.add('flex');
-}
+    <script>
+        // Intersection observer for fading
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.1 };
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
 
-// ── Init ────────────────────────────────────────────────
-function init() {
-  tickClock();
-  buildWirelessSection();
-  initRoutingSelects();
-  buildInputsTable();
-  renderOverview();
-  loadNotes();
-  showLiturgicalDay();
-  // Update inputs heading
-  const h = document.getElementById('inputs-heading');
-  if (h && _config) h.textContent = `Stage Inputs — ${_config.inputs.length} Input${_config.inputs.length !== 1 ? 's' : ''}`;
-}
-
-// ── Edit mode ────────────────────────────────────────────
-function startEdit() {
-  const d = getData();
-  (_config.headsets || []).forEach((_, i) => {
-    const n = i + 1;
-    const fe = document.getElementById(`f-hs${n}`);
-    const rt = document.getElementById(`f-hs${n}rt`);
-    if (fe) fe.value = d[`hs${n}`]   || '';
-    if (rt) rt.value = d[`hs${n}rt`] || '';
-  });
-  (_config.wireless || []).forEach((_, i) => {
-    const n = i + 1;
-    const fe = document.getElementById(`f-w${n}`);
-    const rt = document.getElementById(`f-w${n}rt`);
-    if (fe) fe.value = d[`w${n}`]   || '';
-    if (rt) rt.value = d[`w${n}rt`] || '';
-  });
-  (_config.inputs || []).forEach((inp, i) => {
-    const n = i + 1;
-    const re  = document.getElementById(`f-i${n}r`);
-    const me  = document.getElementById(`f-i${n}m`);
-    const rte = document.getElementById(`f-i${n}rt`);
-    if (re)  re.value  = d[`i${n}r`]  !== undefined ? d[`i${n}r`]  : (inp.default_role || '');
-    if (me)  me.value  = d[`i${n}m`]  || '';
-    if (rte) rte.value = d[`i${n}rt`] || '';
-  });
-  document.body.classList.add('editing');
-}
-
-function cancelEdit() {
-  document.body.classList.remove('editing');
-}
-
-function saveEdit() {
-  const d = getData();
-  (_config.headsets || []).forEach((_, i) => {
-    const n = i + 1;
-    const fe = document.getElementById(`f-hs${n}`);
-    const rt = document.getElementById(`f-hs${n}rt`);
-    d[`hs${n}`]   = fe ? fe.value.trim() : '';
-    d[`hs${n}rt`] = rt ? rt.value.trim() : '';
-  });
-  (_config.wireless || []).forEach((_, i) => {
-    const n = i + 1;
-    const fe = document.getElementById(`f-w${n}`);
-    const rt = document.getElementById(`f-w${n}rt`);
-    d[`w${n}`]   = fe ? fe.value.trim() : '';
-    d[`w${n}rt`] = rt ? rt.value.trim() : '';
-  });
-  (_config.inputs || []).forEach((_, i) => {
-    const n = i + 1;
-    const re  = document.getElementById(`f-i${n}r`);
-    const me  = document.getElementById(`f-i${n}m`);
-    const rte = document.getElementById(`f-i${n}rt`);
-    d[`i${n}r`]  = re  ? re.value.trim()  : '';
-    d[`i${n}m`]  = me  ? me.value.trim()  : '';
-    d[`i${n}rt`] = rte ? rte.value.trim() : '';
-  });
-  saveData(d);
-  document.body.classList.remove('editing');
-  renderOverview();
-}
-
-// ── Render Overview ──────────────────────────────────────
-function renderOverview() {
-  const d = getData();
-  const setVal = (id, val) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (val) { el.textContent = val; el.classList.remove('empty'); }
-    else     { el.textContent = '—'; el.classList.add('empty'); }
-  };
-  const setRt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || ''; };
-
-  (_config?.headsets || []).forEach((_, i) => {
-    const n = i + 1;
-    setVal(`v-hs${n}`, d[`hs${n}`]);
-    setRt(`v-hs${n}rt`, d[`hs${n}rt`]);
-  });
-  (_config?.wireless || []).forEach((_, i) => {
-    const n = i + 1;
-    setVal(`v-w${n}`, d[`w${n}`]);
-    setRt(`v-w${n}rt`, d[`w${n}rt`]);
-  });
-  (_config?.inputs || []).forEach((inp, i) => {
-    const n = i + 1;
-    const role    = d[`i${n}r`]  !== undefined ? d[`i${n}r`]  : (inp.default_role || '');
-    const mus     = d[`i${n}m`]  || '';
-    const routing = d[`i${n}rt`] || '';
-    const rv  = document.getElementById(`v-i${n}r`);
-    const mv  = document.getElementById(`v-i${n}m`);
-    const rtv = document.getElementById(`v-i${n}rt`);
-    if (rv)  { rv.textContent  = role    || 'Not set';    rv.classList.toggle('empty', !role); }
-    if (mv)  { mv.textContent  = mus     || 'Unassigned'; mv.classList.toggle('empty', !mus);  }
-    if (rtv) { rtv.textContent = routing || '—';          rtv.classList.toggle('empty', !routing); }
-  });
-}
-
-// ── Build wireless section ───────────────────────────────
-function buildWirelessSection() {
-  if (!_config) return;
-  const d = getData();
-  const grid = document.getElementById('wireless-grid');
-  let html = '';
-  (_config.headsets || []).forEach((hs, i) => {
-    const n = i + 1;
-    html += `<div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2 border-primary">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="material-symbols-outlined text-primary" style="font-size:18px">headset_mic</span>
-        <span class="label-xs text-on-surface-variant">${esc(hs.label)}${hs.role ? ' · ' + esc(hs.role) : ''}</span>
-      </div>
-      <span class="f-view val" id="v-hs${n}">—</span>
-      <input class="f-edit" type="text" id="f-hs${n}" placeholder="${esc(hs.label)}"/>
-      <div class="mt-2">
-        <span class="f-view label-xs text-on-surface-variant/60" id="v-hs${n}rt"></span>
-        <select class="f-edit text-sm" id="f-hs${n}rt">${chOpts(d[`hs${n}rt`] || '')}</select>
-      </div>
-    </div>`;
-  });
-  (_config.wireless || []).forEach((w, i) => {
-    const n = i + 1;
-    html += `<div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2 border-primary" style="opacity:0.85">
-      <div class="flex items-center gap-2 mb-3">
-        <span class="material-symbols-outlined text-primary" style="font-size:18px">mic</span>
-        <span class="label-xs text-on-surface-variant">${esc(w.label)}${w.role ? ' · ' + esc(w.role) : ''}</span>
-      </div>
-      <span class="f-view val" id="v-w${n}">—</span>
-      <input class="f-edit" type="text" id="f-w${n}" placeholder="Assigned person"/>
-      <div class="mt-2">
-        <span class="f-view label-xs text-on-surface-variant/60" id="v-w${n}rt"></span>
-        <select class="f-edit text-sm" id="f-w${n}rt">${chOpts(d[`w${n}rt`] || '')}</select>
-      </div>
-    </div>`;
-  });
-  grid.innerHTML = html;
-}
-
-// ── Channel routing helpers ───────────────────────────────
-function chOpts(selected) {
-  const max = _config?.console_channels || 24;
-  let o = '<option value="">—</option>';
-  for (let i = 1; i <= max; i++) {
-    const v = `Ch ${i}`;
-    o += `<option value="${v}"${selected === v ? ' selected' : ''}>${v}</option>`;
-  }
-  return o;
-}
-
-function initRoutingSelects() {
-  if (!_config) return;
-  const d = getData();
-  (_config.headsets || []).forEach((_, i) => {
-    const n = i + 1;
-    const el = document.getElementById(`f-hs${n}rt`);
-    if (el) el.innerHTML = chOpts(d[`hs${n}rt`] || '');
-  });
-  (_config.wireless || []).forEach((_, i) => {
-    const n = i + 1;
-    const el = document.getElementById(`f-w${n}rt`);
-    if (el) el.innerHTML = chOpts(d[`w${n}rt`] || '');
-  });
-}
-
-// ── Build stage inputs table ─────────────────────────────
-function buildInputsTable() {
-  if (!_config) return;
-  const d = getData();
-  const tbody = document.getElementById('inputs-tbody');
-  let rows = '';
-  (_config.inputs || []).forEach((inp, i) => {
-    const n       = i + 1;
-    const role    = d[`i${n}r`]  !== undefined ? d[`i${n}r`]  : (inp.default_role || '');
-    const mus     = d[`i${n}m`]  || '';
-    const routing = d[`i${n}rt`] || '';
-    rows += `<tr class="bg-surface-container-lowest rounded-xl">
-      <td class="px-5 py-3 rounded-l-xl font-headline font-black text-primary text-sm">${String(n).padStart(2,'0')}</td>
-      <td class="px-5 py-3 label-xs text-on-surface-variant">${esc(inp.location)}</td>
-      <td class="px-3 py-2">
-        <span class="f-view val ${role ? '' : 'empty'}" id="v-i${n}r">${esc(role) || 'Not set'}</span>
-        <input class="f-edit text-sm" type="text" id="f-i${n}r" value="${esc(role)}" placeholder="Role / Instrument"/>
-      </td>
-      <td class="px-3 py-2">
-        <span class="f-view val ${mus ? '' : 'empty'}" id="v-i${n}m">${esc(mus) || 'Unassigned'}</span>
-        <input class="f-edit text-sm" type="text" id="f-i${n}m" value="${esc(mus)}" placeholder="Musician name"/>
-      </td>
-      <td class="px-3 py-2 rounded-r-xl">
-        <span class="f-view val ${routing ? '' : 'empty'}" id="v-i${n}rt">${esc(routing) || '—'}</span>
-        <select class="f-edit text-sm" id="f-i${n}rt">${chOpts(routing)}</select>
-      </td>
-    </tr>`;
-  });
-  tbody.innerHTML = rows;
-}
-
-// ── Live clock ────────────────────────────────────────────
-function tickClock() {
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-  const timeStr = now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-  const hd = document.getElementById('header-date');
-  const ht = document.getElementById('header-time');
-  if (hd) hd.textContent = dateStr;
-  if (ht) ht.textContent = timeStr;
-}
-setInterval(tickClock, 1000);
-tickClock();
-
-function updatePill(d) { /* no-op */ }
-
-// ── Settings config editor ───────────────────────────────
-let _cfgDraft = null;
-
-function loadSettingsForm() {
-  if (!_config) return;
-  _cfgDraft = JSON.parse(JSON.stringify(_config));
-  document.getElementById('cfg-name').value     = _config.name;
-  document.getElementById('cfg-color').value    = _config.color;
-  document.getElementById('cfg-channels').value = _config.console_channels;
-  renderCfgInputsList();
-  renderCfgHeadsetsList();
-  renderCfgWirelessList();
-}
-
-function syncCfgDraftFromDOM() {
-  (_cfgDraft.inputs || []).forEach((_, i) => {
-    const l = document.getElementById(`cfg-il-${i}`); if (l) _cfgDraft.inputs[i].location     = l.value;
-    const r = document.getElementById(`cfg-ir-${i}`); if (r) _cfgDraft.inputs[i].default_role = r.value;
-  });
-  (_cfgDraft.headsets || []).forEach((_, i) => {
-    const l = document.getElementById(`cfg-hl-${i}`); if (l) _cfgDraft.headsets[i].label = l.value;
-    const r = document.getElementById(`cfg-hr-${i}`); if (r) _cfgDraft.headsets[i].role  = r.value;
-  });
-  (_cfgDraft.wireless || []).forEach((_, i) => {
-    const l = document.getElementById(`cfg-wl-${i}`); if (l) _cfgDraft.wireless[i].label = l.value;
-    const r = document.getElementById(`cfg-wr-${i}`); if (r) _cfgDraft.wireless[i].role  = r.value;
-  });
-}
-
-function renderCfgInputsList() {
-  document.getElementById('cfg-inputs-list').innerHTML = (_cfgDraft.inputs || []).map((inp, i) => `
-    <div class="flex gap-2 items-center">
-      <span class="label-xs text-on-surface-variant w-5 text-center flex-shrink-0">${i+1}</span>
-      <input id="cfg-il-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Location" value="${esc(inp.location)}"/>
-      <input id="cfg-ir-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Default role" value="${esc(inp.default_role)}"/>
-      <button onclick="cfgRemoveInput(${i})" class="text-error font-bold text-base px-1 flex-shrink-0 hover:opacity-70">×</button>
-    </div>`).join('');
-}
-function renderCfgHeadsetsList() {
-  document.getElementById('cfg-headsets-list').innerHTML = (_cfgDraft.headsets || []).map((h, i) => `
-    <div class="flex gap-2 items-center">
-      <input id="cfg-hl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(h.label)}"/>
-      <input id="cfg-hr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(h.role)}"/>
-      <button onclick="cfgRemoveHeadset(${i})" class="text-error font-bold text-base px-1 flex-shrink-0 hover:opacity-70">×</button>
-    </div>`).join('');
-}
-function renderCfgWirelessList() {
-  document.getElementById('cfg-wireless-list').innerHTML = (_cfgDraft.wireless || []).map((w, i) => `
-    <div class="flex gap-2 items-center">
-      <input id="cfg-wl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(w.label)}"/>
-      <input id="cfg-wr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(w.role)}"/>
-      <button onclick="cfgRemoveWireless(${i})" class="text-error font-bold text-base px-1 flex-shrink-0 hover:opacity-70">×</button>
-    </div>`).join('');
-}
-
-function cfgAddInput() {
-  syncCfgDraftFromDOM();
-  const n = _cfgDraft.inputs.length + 1;
-  _cfgDraft.inputs.push({location:`Input ${n}`, default_role:''});
-  renderCfgInputsList();
-}
-function cfgRemoveInput(i) {
-  syncCfgDraftFromDOM();
-  _cfgDraft.inputs.splice(i, 1);
-  renderCfgInputsList();
-}
-function cfgAddHeadset() {
-  syncCfgDraftFromDOM();
-  const n = _cfgDraft.headsets.length + 1;
-  _cfgDraft.headsets.push({label:`Headset ${n}`, role:''});
-  renderCfgHeadsetsList();
-}
-function cfgRemoveHeadset(i) {
-  syncCfgDraftFromDOM();
-  _cfgDraft.headsets.splice(i, 1);
-  renderCfgHeadsetsList();
-}
-function cfgAddWireless() {
-  syncCfgDraftFromDOM();
-  const n = _cfgDraft.wireless.length + 1;
-  _cfgDraft.wireless.push({label:`Wireless ${n}`, role:''});
-  renderCfgWirelessList();
-}
-function cfgRemoveWireless(i) {
-  syncCfgDraftFromDOM();
-  _cfgDraft.wireless.splice(i, 1);
-  renderCfgWirelessList();
-}
-
-function saveSetup() {
-  syncCfgDraftFromDOM();
-  const name = document.getElementById('cfg-name').value.trim();
-  const msg  = document.getElementById('setup-msg');
-  if (!name) { flash(msg, 'Church name is required.', 'text-error'); return; }
-  const newCfg = {
-    name,
-    color:            document.getElementById('cfg-color').value,
-    console_channels: parseInt(document.getElementById('cfg-channels').value) || 24,
-    inputs:   (_cfgDraft.inputs   || []).map((inp, i) => ({ location: inp.location.trim()   || `Input ${i+1}`,   default_role: inp.default_role.trim() })),
-    headsets: (_cfgDraft.headsets || []).map((h, i)   => ({ label:    h.label.trim()         || `Headset ${i+1}`, role:         h.role.trim()          })),
-    wireless: (_cfgDraft.wireless || []).map((w, i)   => ({ label:    w.label.trim()         || `Wireless ${i+1}`,role:         w.role.trim()          })),
-  };
-  saveOrgConfig(newCfg);
-  applyTheme(newCfg.color);
-  buildWirelessSection();
-  initRoutingSelects();
-  buildInputsTable();
-  renderOverview();
-  const h = document.getElementById('inputs-heading');
-  if (h) h.textContent = `Stage Inputs — ${newCfg.inputs.length} Input${newCfg.inputs.length !== 1 ? 's' : ''}`;
-  flash(msg, 'Setup saved!', 'text-primary');
-}
-
-// ── Notes ─────────────────────────────────────────────────
-function loadNotes() { document.getElementById('f-notes').value = getData().notes || ''; }
-let _nt;
-function autoSaveNotes() {
-  clearTimeout(_nt);
-  _nt = setTimeout(() => { const d = getData(); d.notes = document.getElementById('f-notes').value; saveData(d); }, 500);
-}
-
-// ── Reset ────────────────────────────────────────────────
-function resetData() {
-  if (!confirm('Clear all service data?')) return;
-  const d = getData();
-  saveData({ notes: d.notes || '' });
-  buildInputsTable();
-  renderOverview();
-}
-
-// ── Util ──────────────────────────────────────────────────
-function esc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-</script>
+        document.querySelectorAll('.fade-in-up').forEach((el) => observer.observe(el));
+    </script>
 </body>
 </html>

@@ -1,0 +1,2434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sound Production Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0..1&display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "primary":                  "#15422e",
+          "on-primary":               "#ffffff",
+          "primary-container":        "#2e5a44",
+          "on-primary-container":     "#a0cfb4",
+          "primary-fixed":            "#bdeed0",
+          "secondary-container":      "#d2e8d9",
+          "on-secondary-container":   "#55695d",
+          "secondary-fixed":          "#d2e8d9",
+          "surface":                  "#f9f9f8",
+          "surface-container-lowest": "#ffffff",
+          "surface-container-low":    "#f3f4f3",
+          "surface-container":        "#edeeed",
+          "surface-container-high":   "#e7e8e7",
+          "surface-container-highest":"#e1e3e2",
+          "on-surface":               "#191c1c",
+          "on-surface-variant":       "#414943",
+          "outline-variant":          "#c1c9c1",
+          "error":                    "#ba1a1a",
+          "error-container":          "#ffdad6",
+        },
+        fontFamily: {
+          headline: ["Manrope", "sans-serif"],
+          body:     ["Inter", "sans-serif"],
+        },
+        borderRadius: {
+          DEFAULT: "0.125rem",
+          sm: "0.25rem", md: "0.375rem", lg: "0.5rem",
+          xl: "0.75rem", "2xl": "1rem", "3xl": "1.5rem", "4xl": "2rem",
+          full: "9999px",
+        },
+      },
+    },
+  };
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; background: #f9f9f8; color: #191c1c; }
+  .font-headline { font-family: 'Manrope', sans-serif; }
+  .label-xs { font-family: 'Inter'; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
+  .label-sm { font-family: 'Inter'; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-size: 20px; line-height: 1; }
+  .fill-icon { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+  /* Underline inputs */
+  .f-edit {
+    background: #e1e3e2; border: none; border-bottom: 2px solid transparent;
+    border-radius: 0.375rem 0.375rem 0 0; padding: 7px 10px 5px;
+    font-family: 'Inter'; font-size: inherit; color: #191c1c;
+    width: 100%; transition: background .15s, border-color .15s; outline: none;
+  }
+  .f-edit:focus { background: #fff; border-bottom-color: #15422e; }
+  .f-edit::placeholder { color: #717973; }
+  select.f-edit { cursor: pointer; }
+  input[type="color"].f-edit { padding: 3px 6px; height: 38px; cursor: pointer; }
+
+  /* Edit mode toggling */
+  .f-view  { display: block; }
+  .f-edit  { display: none; }
+  body.editing .f-view { display: none; }
+  body.editing .f-edit { display: block; }
+  body.editing #btn-edit  { display: none; }
+  body.editing #btn-save-row { display: flex; }
+  #btn-save-row { display: none; }
+
+  /* Glass topbar */
+  .glass { background: rgba(249,249,248,0.88); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+  /* Sections */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Sidebar nav */
+  .nav-link { transition: all .15s; border-right: 3px solid transparent; }
+  .nav-link.active { background: rgba(189,238,208,0.4); color: #15422e; border-right-color: #15422e; }
+  .nav-link:not(.active):hover { background: #edeeed; }
+
+  /* Mobile bottom nav overrides */
+  .mob-nav { border-right: none !important; border-top: 3px solid transparent; }
+  .mob-nav.active { border-top-color: #15422e; background: rgba(189,238,208,0.3); }
+
+  /* Scrollbar hide */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Value display */
+  .val { display: block; font-weight: 600; color: #191c1c; }
+  .val.empty { color: #717973; font-weight: 400; font-style: italic; }
+
+  /* ── Live section ── */
+  #section-live.active { display: flex; flex-direction: column; background: #0d1f14; min-height: calc(100dvh - 3.5rem); }
+  body.live-active header  { background: rgba(13,31,20,0.97) !important; border-bottom: 1px solid rgba(160,207,180,0.1); }
+  body.live-active #btn-edit, body.live-active #btn-save-row { display: none !important; }
+  body.live-active .nav-link:not([data-section="live"]).active { color: inherit; border-right-color: transparent; background: transparent; }
+  .nav-live { transition: opacity .2s; }
+  .nav-live.no-cues { opacity: 0.35; }
+
+  /* ── Run of Show ── */
+  .ros-row-actions { flex-direction: column; gap: 4px; flex-shrink: 0; }
+  body.editing .ros-row-actions { display: flex !important; }
+  .ros-mics-wrap { display: block; }
+
+  /* ── Print ── */
+  @media print {
+    body { background: white !important; color: black !important; font-family: 'Inter', sans-serif; font-size: 10pt; }
+    #login-screen, #wizard-screen, #live-screen,
+    nav, header, #section-settings,
+    #wireless-grid, #inputs-tbody,
+    .f-edit, #btn-edit, #btn-save-row, #btn-print-ros,
+    #liturgy-card, .section:not(.active),
+    .ros-row-actions { display: none !important; }
+    main { margin-top: 0 !important; }
+    #section-overview { padding: 0 !important; max-width: none !important; }
+    #print-header { display: block !important; margin-bottom: 12pt; }
+    /* Wireless mics print table */
+    #print-mics-table { width: 100%; border-collapse: collapse; margin-bottom: 14pt; }
+    #print-mics-table th { text-align:left; font-size:8pt; text-transform:uppercase; letter-spacing:0.06em; padding:3pt 6pt; border-bottom:1px solid #999; }
+    #print-mics-table td { padding:4pt 6pt; border-bottom:1px solid #ddd; font-size:10pt; }
+    /* ROS print table */
+    #print-ros-table { width: 100%; border-collapse: collapse; }
+    #print-ros-table th { text-align:left; font-size:8pt; text-transform:uppercase; letter-spacing:0.06em; padding:3pt 6pt; border-bottom:1.5px solid #333; }
+    #print-ros-table td { padding:5pt 6pt; border-bottom:1px solid #ddd; font-size:10pt; vertical-align:top; }
+    #print-ros-table td:first-child { font-weight:900; color:#333; width:28pt; }
+    #print-ros-table tr:nth-child(even) td { background:#f7f7f7; }
+    /* Hide existing ROS cards, show print table */
+    #ros-list { display: none !important; }
+    #ros-print-area { display: block !important; }
+    .f-view { display: block !important; }
+  }
+
+  /* ── iPad / Touch ── */
+  input, select, textarea { font-size: 16px !important; }
+  * { -webkit-tap-highlight-color: transparent; }
+  button, a, [data-section] { touch-action: manipulation; }
+  main { -webkit-overflow-scrolling: touch; }
+  .nav-link { min-height: 44px; display: flex; align-items: center; }
+  #btn-edit, #btn-save-row button { min-height: 44px; }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  nav { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="login-screen" class="fixed inset-0 z-[200] flex items-center justify-center bg-surface" style="display:flex">
+  <div class="w-full max-w-sm mx-auto px-8 py-12">
+
+    <div class="mb-8">
+      <h1 class="font-headline font-black text-primary text-2xl tracking-tight">Sound Production</h1>
+      <p class="text-on-surface-variant text-sm mt-1">Sign in to access your run sheet.</p>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="label-xs text-on-surface-variant block mb-2">Email</label>
+        <input id="email-input" type="email" placeholder="team@yourchurch.org" class="f-edit rounded-md" style="display:block" autocomplete="email"/>
+      </div>
+      <div>
+        <label class="label-xs text-on-surface-variant block mb-2">Password</label>
+        <input id="pw-input" type="password" placeholder="Password" class="f-edit rounded-md" style="display:block" autocomplete="current-password"/>
+      </div>
+      <div id="confirm-pw-wrap" class="hidden">
+        <label class="label-xs text-on-surface-variant block mb-2">Confirm Password</label>
+        <input id="confirm-pw-input" type="password" placeholder="Confirm password" class="f-edit rounded-md" style="display:block" autocomplete="new-password"/>
+      </div>
+      <div id="login-error" class="hidden text-xs text-error font-medium">Incorrect email or password.</div>
+      <div id="signup-error" class="hidden text-xs text-error font-medium"></div>
+      <div id="signup-success" class="hidden text-xs text-green-700 font-medium">Account created! Check your email to confirm, then sign in.</div>
+      <button id="auth-btn" onclick="doLogin()" class="w-full bg-primary text-on-primary font-headline font-bold text-sm tracking-wide py-3 rounded-full hover:opacity-90 transition-opacity">
+        Sign In
+      </button>
+      <p class="text-center text-xs text-on-surface-variant">
+        <span id="auth-toggle-text">Don't have an account?</span>
+        <button id="auth-toggle-btn" onclick="toggleAuthMode()" class="ml-1 text-primary font-semibold hover:underline">Create account</button>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ WIZARD ══════════════ -->
+<div id="wizard-screen" class="fixed inset-0 z-[300] bg-surface flex items-start justify-center overflow-y-auto py-8 px-4" style="display:none">
+  <div id="wiz-card" class="bg-surface-container-lowest rounded-4xl shadow-lg w-full max-w-lg border-t-4 border-primary">
+    <div class="p-8">
+      <!-- Step indicators -->
+      <div class="flex items-center gap-2 mb-6">
+        <div id="wiz-dot-1" class="w-2 h-2 rounded-full bg-primary"></div>
+        <div id="wiz-dot-2" class="w-2 h-2 rounded-full bg-outline-variant"></div>
+        <div id="wiz-dot-3" class="w-2 h-2 rounded-full bg-outline-variant"></div>
+        <div id="wiz-dot-4" class="w-2 h-2 rounded-full bg-outline-variant"></div>
+        <div id="wiz-dot-5" class="w-2 h-2 rounded-full bg-outline-variant"></div>
+        <div id="wiz-dot-6" class="w-2 h-2 rounded-full bg-outline-variant"></div>
+        <span id="wiz-step-label" class="ml-2 label-xs text-on-surface-variant">Step 1 of 6</span>
+      </div>
+      <!-- Step content -->
+      <div id="wiz-content"></div>
+      <!-- Nav buttons -->
+      <div class="flex justify-between mt-8">
+        <button id="wiz-back" onclick="wizBack()" class="font-headline font-bold text-sm px-5 py-2.5 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors" style="display:none">
+          ← Back
+        </button>
+        <div></div>
+        <button id="wiz-next" onclick="wizNext()" class="bg-primary text-on-primary font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+          Next →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app" class="min-h-screen flex" style="display:none">
+
+  <!-- SIDEBAR (desktop only) -->
+  <nav class="fixed left-0 top-0 h-full w-56 bg-surface-container-low hidden md:flex flex-col py-6 z-50">
+    <div class="px-5 mb-8">
+      <p id="sidebar-church-name" class="font-headline font-bold text-on-surface text-sm leading-snug mb-1 truncate"></p>
+      <p class="label-xs text-on-surface-variant">Sound Production</p>
+    </div>
+
+    <div class="flex-1 px-2 space-y-0.5">
+      <a class="nav-link active flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant" data-section="overview">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span class="label-sm">Run Sheet</span>
+      </a>
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant" data-section="plan">
+        <span class="material-symbols-outlined">event_note</span>
+        <span class="label-sm">Service Plan</span>
+      </a>
+      <a class="nav-link nav-live flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant" data-section="live">
+        <span class="material-symbols-outlined">play_circle</span>
+        <span class="label-sm">Live</span>
+      </a>
+    </div>
+
+    <div class="px-2 border-t border-outline-variant/30 pt-3 space-y-0.5">
+      <a class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant" data-section="settings">
+        <span class="material-symbols-outlined">manage_accounts</span>
+        <span class="label-sm">Settings</span>
+      </a>
+      <a onclick="doLogout()" class="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer text-on-surface-variant nav-link">
+        <span class="material-symbols-outlined">lock</span>
+        <span class="label-sm">Lock</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="flex-1 md:ml-56 flex flex-col min-h-screen">
+
+    <!-- Top bar -->
+    <header class="glass fixed top-0 right-0 left-0 md:left-56 z-40 h-14 flex items-center justify-between px-4 md:px-8 shadow-sm">
+      <div class="flex items-center gap-2 md:gap-4 min-w-0">
+        <span id="header-church-name" class="md:hidden font-headline font-bold text-primary text-sm truncate max-w-[130px] flex-shrink-0"></span>
+        <span class="hidden md:inline font-headline font-black text-primary tracking-widest uppercase text-sm flex-shrink-0">Sound Production</span>
+        <span class="hidden md:inline text-outline-variant/60 flex-shrink-0">·</span>
+        <span id="header-date" class="hidden md:inline label-xs text-on-surface-variant flex-shrink-0"></span>
+        <span id="header-time" class="label-xs text-on-surface-variant flex-shrink-0"></span>
+        <div id="header-liturgical" class="hidden items-center gap-2 flex-shrink-0">
+          <span class="text-outline-variant/60">·</span>
+          <span id="header-liturgical-chip" class="inline-block w-2 h-2 rounded-full flex-shrink-0"></span>
+          <span id="header-liturgical-name" class="label-xs text-on-surface-variant truncate max-w-[160px] md:max-w-none"></span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-edit" onclick="startEdit()"
+          class="flex items-center gap-1.5 text-primary font-headline font-bold text-xs px-4 py-2 rounded-full hover:bg-secondary-container transition-colors">
+          <span class="material-symbols-outlined" style="font-size:16px">edit</span> Edit
+        </button>
+        <div id="btn-save-row" class="items-center gap-2">
+          <button onclick="cancelEdit()"
+            class="font-headline font-bold text-xs px-4 py-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors">
+            Cancel
+          </button>
+          <button onclick="saveEdit()"
+            class="flex items-center gap-1.5 bg-primary text-on-primary font-headline font-bold text-xs px-5 py-2 rounded-full hover:opacity-90 transition-opacity">
+            <span class="material-symbols-outlined" style="font-size:16px">check</span> Save
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mt-14 pb-24 md:pb-10">
+
+      <!-- ══ RUN SHEET ══ -->
+      <div id="section-overview" class="section active px-4 md:px-8 py-6 md:py-10 max-w-4xl mx-auto space-y-8 md:space-y-10">
+
+        <!-- Wireless Microphones (built dynamically) -->
+        <section class="space-y-4">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-primary rounded-sm"></div>
+            <h3 class="label-sm text-on-surface">Wireless Microphones</h3>
+          </div>
+          <div id="wireless-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- Stage Inputs -->
+        <section class="space-y-4">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-primary rounded-sm"></div>
+            <h3 id="inputs-heading" class="label-sm text-on-surface">Stage Inputs</h3>
+          </div>
+          <div class="bg-surface-container-low rounded-4xl p-2 overflow-x-auto">
+            <table class="w-full text-left border-separate border-spacing-2" style="min-width:480px">
+              <thead>
+                <tr class="label-xs text-on-surface-variant">
+                  <th class="px-5 py-3 w-12">Input</th>
+                  <th class="px-5 py-3 w-28">Location</th>
+                  <th class="px-5 py-3">Instrument / Role</th>
+                  <th class="px-5 py-3">Musician</th>
+                  <th class="px-5 py-3">Routing</th>
+                </tr>
+              </thead>
+              <tbody id="inputs-tbody" class="text-sm"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Notes -->
+        <section class="space-y-4">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-primary rounded-sm"></div>
+            <h3 class="label-sm text-on-surface">Notes</h3>
+          </div>
+          <textarea id="f-notes"
+            class="w-full bg-surface-container-low rounded-3xl p-6 resize-none min-h-[140px] font-body text-sm text-on-surface border-none outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            placeholder="Cues, reminders, anything the team needs to know…"
+            oninput="autoSaveNotes()"></textarea>
+          <p class="label-xs text-on-surface-variant">Auto-saved as you type.</p>
+        </section>
+
+      </div><!-- /overview -->
+
+      <!-- ══ SETTINGS ══ -->
+      <div id="section-settings" class="section px-4 md:px-8 py-6 md:py-10 max-w-2xl mx-auto space-y-10">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <div class="w-2 h-2 bg-primary rounded-sm"></div>
+            <span class="label-sm text-on-surface-variant">Administration</span>
+          </div>
+          <h2 class="font-headline font-black text-2xl text-on-surface">Settings</h2>
+        </div>
+
+        <!-- Church Setup -->
+        <section class="space-y-5">
+          <h3 class="font-headline font-bold text-sm text-on-surface">Church Setup</h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">Church Name</label>
+              <input class="f-edit" type="text" id="cfg-name" style="display:block" placeholder="Your church name"/>
+            </div>
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">Theme Colour</label>
+              <input class="f-edit" type="color" id="cfg-color" style="display:block"/>
+            </div>
+          </div>
+
+          <div>
+            <label class="label-xs text-on-surface-variant block mb-1.5">Console Channels</label>
+            <select class="f-edit" id="cfg-channels" style="display:block; max-width:180px">
+              <option value="8">8 channels</option>
+              <option value="16">16 channels</option>
+              <option value="24">24 channels</option>
+              <option value="32">32 channels</option>
+              <option value="48">48 channels</option>
+              <option value="64">64 channels</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">Prayer Book Tradition</label>
+              <select class="f-edit" id="cfg-prayerbook" style="display:block">
+                <option value="bcp1979">BCP 1979 (Episcopal / TEC)</option>
+                <option value="acna2019">ACNA 2019 Prayer Book</option>
+                <option value="roman">Roman Rite (Catholic)</option>
+                <option value="lutheran">Lutheran (ELW)</option>
+                <option value="custom">Other / Custom</option>
+              </select>
+            </div>
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">Default Service Type</label>
+              <select class="f-edit" id="cfg-svctype" style="display:block">
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="label-xs text-on-surface-variant block mb-2">Stage Inputs</label>
+            <div id="cfg-inputs-list" class="space-y-2 mb-2"></div>
+            <button onclick="cfgAddInput()" class="text-primary font-bold text-xs hover:underline">+ Add input</button>
+          </div>
+
+          <div>
+            <label class="label-xs text-on-surface-variant block mb-2">Headsets</label>
+            <div id="cfg-headsets-list" class="space-y-2 mb-2"></div>
+            <button onclick="cfgAddHeadset()" class="text-primary font-bold text-xs hover:underline">+ Add headset</button>
+          </div>
+
+          <div>
+            <label class="label-xs text-on-surface-variant block mb-2">Wireless / Handhelds</label>
+            <div id="cfg-wireless-list" class="space-y-2 mb-2"></div>
+            <button onclick="cfgAddWireless()" class="text-primary font-bold text-xs hover:underline">+ Add wireless mic</button>
+          </div>
+
+          <button onclick="saveSetup()" class="bg-primary text-on-primary font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+            Save Setup
+          </button>
+          <p id="setup-msg" class="text-sm font-medium hidden"></p>
+        </section>
+
+        <!-- Planning Center Online -->
+        <section class="space-y-4">
+          <div>
+            <h3 class="font-headline font-bold text-sm text-on-surface">Planning Center Online</h3>
+            <p class="text-xs text-on-surface-variant mt-1">Connect your PCO account to import service plans directly into the Run of Show.</p>
+          </div>
+          <div id="pco-connected-ui" style="display:none" class="space-y-3">
+            <div class="flex items-center gap-2 bg-secondary-container/50 rounded-xl px-4 py-3">
+              <span class="material-symbols-outlined text-primary" style="font-size:18px">check_circle</span>
+              <div>
+                <p class="label-xs text-on-surface">Connected</p>
+                <p id="pco-org-name" class="text-xs text-on-surface-variant"></p>
+              </div>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+              <button onclick="pcoImportPlan()" class="flex items-center gap-1.5 bg-primary text-on-primary font-headline font-bold text-sm px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+                <span class="material-symbols-outlined" style="font-size:16px">download</span> Import Upcoming Plan
+              </button>
+              <button onclick="pcoDisconnect()" class="font-headline font-bold text-sm px-5 py-2.5 rounded-full text-error hover:bg-error-container transition-colors">Disconnect</button>
+            </div>
+            <p id="pco-import-msg" class="text-sm font-medium hidden"></p>
+          </div>
+          <div id="pco-connect-ui" class="space-y-3">
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">PCO App Client ID</label>
+              <input id="pco-client-id" type="text" class="f-edit" style="display:block; max-width:380px"
+                placeholder="Paste your PCO OAuth App Client ID"/>
+              <p class="text-xs text-on-surface-variant mt-1.5">
+                Register an app at
+                <a href="https://api.planningcenteronline.com/oauth/applications" target="_blank" rel="noopener" class="text-primary underline">api.planningcenteronline.com/oauth/applications</a>
+                with redirect URI set to this page's URL.
+              </p>
+            </div>
+            <button onclick="pcoConnect()" class="flex items-center gap-1.5 bg-primary text-on-primary font-headline font-bold text-sm px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+              <span class="material-symbols-outlined" style="font-size:16px">link</span> Connect Planning Center
+            </button>
+            <p id="pco-connect-msg" class="text-sm font-medium hidden"></p>
+          </div>
+        </section>
+
+        <!-- Change Password -->
+        <section class="space-y-4">
+          <h3 class="font-headline font-bold text-sm text-on-surface">Change Password</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">New Password</label>
+              <input class="f-edit" type="password" id="pw-new" placeholder="New password" style="display:block"/>
+            </div>
+            <div>
+              <label class="label-xs text-on-surface-variant block mb-1.5">Confirm</label>
+              <input class="f-edit" type="password" id="pw-confirm" placeholder="Confirm" style="display:block"/>
+            </div>
+          </div>
+          <button onclick="changePassword()" class="bg-primary text-on-primary font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+            Update Password
+          </button>
+          <p id="pw-msg" class="text-sm font-medium hidden"></p>
+        </section>
+
+        <!-- Reset Data -->
+        <section class="space-y-3">
+          <h3 class="font-headline font-bold text-sm text-on-surface">Reset Service Data</h3>
+          <p class="text-on-surface-variant text-sm">Clears all current assignments. Setup and password not affected.</p>
+          <button onclick="resetData()" class="bg-error-container text-error font-headline font-bold text-sm px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+            Clear Service Data
+          </button>
+        </section>
+      </div>
+
+      <!-- ══ SERVICE PLAN ══ -->
+      <div id="section-plan" class="section px-4 md:px-8 py-6 md:py-10 max-w-4xl mx-auto space-y-8 md:space-y-10">
+
+        <!-- Liturgy of the Word -->
+        <section class="space-y-4" id="liturgy-card">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-primary rounded-sm"></div>
+            <h3 class="label-sm text-on-surface">Liturgy of the Word</h3>
+          </div>
+          <div id="liturgy-card-body" class="bg-surface-container-low rounded-4xl p-6">
+            <p class="text-on-surface-variant text-sm italic">Loading…</p>
+          </div>
+        </section>
+
+        <!-- Run of Show -->
+        <section class="space-y-4" id="ros-section">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-2 h-2 bg-primary rounded-sm"></div>
+              <h3 class="label-sm text-on-surface">Run of Show</h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="printROS()" id="btn-print-ros"
+                class="f-view flex items-center gap-1 text-on-surface-variant font-headline font-bold text-xs px-3 py-1.5 rounded-full hover:bg-surface-container transition-colors">
+                <span class="material-symbols-outlined" style="font-size:14px">print</span> Print
+              </button>
+              <select id="ros-template-select" class="f-edit text-xs rounded-full px-3 py-1.5" onchange="applyServiceTemplate(this.value)">
+                <option value="">Load template…</option>
+              </select>
+              <button onclick="rosAddCue()" class="f-edit bg-secondary-container text-on-secondary-container font-headline font-bold text-xs px-4 py-2 rounded-full">
+                <span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle">add</span> Add Cue
+              </button>
+            </div>
+          </div>
+          <div id="ros-list" class="space-y-2"></div>
+          <div id="ros-print-area" style="display:none"></div>
+        </section>
+
+      </div><!-- /plan -->
+
+      <!-- ══ LIVE ══ -->
+      <div id="section-live" class="section" onclick="liveAdvance()">
+
+        <!-- Top bar (stops click propagation so Back/Exit work) -->
+        <div class="flex items-center justify-between px-5 py-4 flex-shrink-0" onclick="event.stopPropagation()">
+          <button onclick="liveBack()" id="live-btn-back"
+            class="flex items-center gap-1 font-headline font-bold text-xs px-3 py-2 rounded-full"
+            style="color:#a0cfb4; background:rgba(255,255,255,0.08)">
+            <span class="material-symbols-outlined" style="font-size:16px">arrow_back</span> Back
+          </button>
+          <div class="text-center">
+            <p class="font-headline font-black text-xs tracking-widest uppercase" style="color:#a0cfb4;opacity:0.6">Live Mode</p>
+            <p id="live-progress" class="label-xs" style="color:#a0cfb4;opacity:0.4"></p>
+          </div>
+          <div style="width:72px"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="live-empty" class="flex-1 flex flex-col items-center justify-center gap-3 px-6">
+          <span class="material-symbols-outlined" style="font-size:48px;color:#a0cfb4;opacity:0.3">playlist_play</span>
+          <p class="font-headline font-bold text-base text-center" style="color:#a0cfb4">No cues in the Run of Show</p>
+          <p class="text-sm text-center" style="color:#a0cfb4;opacity:0.5">Add cues in Service Plan first.</p>
+          <button onclick="event.stopPropagation();goTo('plan')" class="mt-2 font-headline font-bold text-xs px-5 py-2.5 rounded-full" style="background:rgba(255,255,255,0.1);color:#a0cfb4">
+            Go to Service Plan
+          </button>
+        </div>
+
+        <!-- Cue display -->
+        <div id="live-cues" class="flex-1 flex flex-col items-center justify-center gap-3 px-6 overflow-hidden" style="display:none">
+          <div id="live-prev" class="w-full max-w-xl rounded-2xl px-6 py-3 text-center" style="opacity:0.3; background:rgba(255,255,255,0.04)">
+            <p class="label-xs" style="color:#a0cfb4">Previous</p>
+            <p id="live-prev-name" class="font-headline font-semibold text-base" style="color:#c8e6d0"></p>
+          </div>
+          <div id="live-current-card" class="w-full max-w-xl rounded-3xl px-8 py-6 text-center shadow-lg" style="background:rgba(255,255,255,0.10)">
+            <p class="label-xs mb-2" style="color:#a0cfb4">Tap to advance</p>
+            <p id="live-current-name" class="font-headline font-black text-3xl md:text-4xl leading-tight mb-4" style="color:#ffffff"></p>
+            <div id="live-current-mics" class="flex flex-wrap justify-center gap-2"></div>
+            <p id="live-current-note" class="text-sm mt-3" style="color:#a0cfb4;font-style:italic"></p>
+          </div>
+          <div id="live-next" class="w-full max-w-xl rounded-2xl px-6 py-3 text-center" style="opacity:0.3; background:rgba(255,255,255,0.04)">
+            <p class="label-xs" style="color:#a0cfb4">Next</p>
+            <p id="live-next-name" class="font-headline font-semibold text-base" style="color:#c8e6d0"></p>
+          </div>
+        </div>
+
+        <!-- Footer hint -->
+        <div class="flex-shrink-0 py-3 text-center" onclick="event.stopPropagation()">
+          <p class="label-xs" style="color:#a0cfb4;opacity:0.3">tap · spacebar · arrow keys</p>
+        </div>
+      </div><!-- /live -->
+
+    </main>
+
+    <!-- Mobile bottom nav -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-outline-variant/20 flex items-stretch" style="padding-bottom: env(safe-area-inset-bottom)">
+      <a class="mob-nav nav-link active flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="overview">
+        <span class="material-symbols-outlined" style="font-size:22px">dashboard</span>
+        <span class="label-xs" style="font-size:0.55rem">Run Sheet</span>
+      </a>
+      <a class="mob-nav nav-link flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="plan">
+        <span class="material-symbols-outlined" style="font-size:22px">event_note</span>
+        <span class="label-xs" style="font-size:0.55rem">Plan</span>
+      </a>
+      <a class="mob-nav nav-link nav-live flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="live">
+        <span class="material-symbols-outlined" style="font-size:22px">play_circle</span>
+        <span class="label-xs" style="font-size:0.55rem">Live</span>
+      </a>
+      <a class="mob-nav nav-link flex-1 flex flex-col items-center justify-center py-2 gap-0.5 cursor-pointer text-on-surface-variant" data-section="settings">
+        <span class="material-symbols-outlined" style="font-size:22px">manage_accounts</span>
+        <span class="label-xs" style="font-size:0.55rem">Settings</span>
+      </a>
+    </nav>
+
+  </div>
+</div><!-- /app -->
+
+<!-- Print header (hidden except @media print) -->
+<div id="print-header" style="display:none">
+  <h1 id="print-church-name" style="font-size:18pt;font-weight:900;margin:0"></h1>
+  <p id="print-date" style="font-size:10pt;margin:4px 0 0"></p>
+  <h2 style="font-size:14pt;font-weight:700;margin:12px 0 6px;border-bottom:2px solid #333;padding-bottom:4px">Run of Show — Mic Cue Sheet</h2>
+</div>
+
+<datalist id="liturgical-roles-list">
+  <option value="Celebrant"/>
+  <option value="Preacher"/>
+  <option value="Deacon"/>
+  <option value="Assisting Priest"/>
+  <option value="Lector"/>
+  <option value="Reader"/>
+  <option value="Cantor"/>
+  <option value="Psalmist"/>
+  <option value="Crucifer"/>
+  <option value="Acolyte"/>
+  <option value="Thurifer"/>
+  <option value="Server"/>
+  <option value="Intercessor"/>
+  <option value="Lay Eucharistic Minister"/>
+  <option value="Chalicist"/>
+  <option value="Verger"/>
+  <option value="Organist"/>
+  <option value="Choir Director"/>
+  <option value="Soloist"/>
+  <option value="MC"/>
+  <option value="Lead Vocals"/>
+  <option value="Worship Leader"/>
+</datalist>
+
+<script>
+// ── Supabase ────────────────────────────────────────────
+const SUPABASE_URL  = 'https://kjsywrmlkwptonunvxep.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_mnr8Iyi6LXYut7l4qb-_Sg__QrpOQjO';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── State ───────────────────────────────────────────────
+let _data    = {};
+let _config  = null;
+let _userId  = null;
+let _channel = null;
+
+// ── Auth ────────────────────────────────────────────────
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('wizard-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('login-error').classList.add('hidden');
+  init();
+}
+
+let _authMode = 'login';
+
+function toggleAuthMode() {
+  _authMode = _authMode === 'login' ? 'signup' : 'login';
+  const isSignup = _authMode === 'signup';
+  document.getElementById('confirm-pw-wrap').classList.toggle('hidden', !isSignup);
+  document.getElementById('auth-btn').textContent = isSignup ? 'Create Account' : 'Sign In';
+  document.getElementById('auth-btn').onclick = isSignup ? doSignUp : doLogin;
+  document.getElementById('auth-toggle-text').textContent = isSignup ? 'Already have an account?' : "Don't have an account?";
+  document.getElementById('auth-toggle-btn').textContent = isSignup ? 'Sign in' : 'Create account';
+  ['login-error','signup-error','signup-success'].forEach(id => document.getElementById(id).classList.add('hidden'));
+}
+
+function showLogin() {
+  if (document.body.classList.contains('editing')) cancelEdit();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('wizard-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+  document.getElementById('email-input').value = '';
+  document.getElementById('confirm-pw-input').value = '';
+  if (_authMode !== 'login') toggleAuthMode();
+}
+
+async function doLogin() {
+  const email = document.getElementById('email-input').value.trim();
+  const pw    = document.getElementById('pw-input').value;
+  const err   = document.getElementById('login-error');
+  const btn   = document.getElementById('auth-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+  btn.disabled = false; btn.textContent = 'Sign In';
+  if (error) { err.classList.remove('hidden'); return; }
+  await loadRemoteData();
+  if (!_config) { showWizard(); return; }
+  applyTheme(_config.color);
+  subscribeRealtime();
+  showApp();
+}
+
+async function doSignUp() {
+  const email = document.getElementById('email-input').value.trim();
+  const pw    = document.getElementById('pw-input').value;
+  const cf    = document.getElementById('confirm-pw-input').value;
+  const errEl = document.getElementById('signup-error');
+  const sucEl = document.getElementById('signup-success');
+  const btn   = document.getElementById('auth-btn');
+  errEl.classList.add('hidden'); sucEl.classList.add('hidden');
+  if (!email) { errEl.textContent = 'Please enter an email.'; errEl.classList.remove('hidden'); return; }
+  if (pw.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.classList.remove('hidden'); return; }
+  if (pw !== cf) { errEl.textContent = 'Passwords do not match.'; errEl.classList.remove('hidden'); return; }
+  btn.disabled = true; btn.textContent = 'Creating account…';
+  const { error } = await sb.auth.signUp({ email, password: pw });
+  btn.disabled = false; btn.textContent = 'Create Account';
+  if (error) { errEl.textContent = error.message; errEl.classList.remove('hidden'); return; }
+  sucEl.classList.remove('hidden');
+}
+
+async function doLogout() {
+  if (_channel) { sb.removeChannel(_channel); _channel = null; }
+  await sb.auth.signOut();
+  _userId = null; _data = {}; _config = null;
+  showLogin();
+}
+
+async function changePassword() {
+  const nw  = document.getElementById('pw-new').value;
+  const cf  = document.getElementById('pw-confirm').value;
+  const msg = document.getElementById('pw-msg');
+  if (!nw)       { flash(msg, 'New password cannot be empty.', 'text-error'); return; }
+  if (nw !== cf) { flash(msg, 'Passwords do not match.', 'text-error'); return; }
+  const { error } = await sb.auth.updateUser({ password: nw });
+  if (error) { flash(msg, error.message, 'text-error'); return; }
+  flash(msg, 'Password updated.', 'text-primary');
+  ['pw-new','pw-confirm'].forEach(id => document.getElementById(id).value = '');
+}
+
+function flash(el, text, cls) {
+  el.textContent = text;
+  el.className = `text-sm font-medium ${cls}`;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
+// ── Data ────────────────────────────────────────────────
+function getData() { return _data; }
+
+function saveData(d) {
+  _data = d;
+  if (!_userId) return;
+  sb.from('run_sheets')
+    .upsert({ user_id: _userId, data: d, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    .then(({ error }) => { if (error) console.error('Save error:', error); });
+}
+
+function saveOrgConfig(cfg) {
+  _config = cfg;
+  if (!_userId) return;
+  sb.from('run_sheets')
+    .upsert({ user_id: _userId, org_config: cfg, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    .then(({ error }) => { if (error) console.error('Config save error:', error); });
+}
+
+async function loadRemoteData() {
+  const { data: { user } } = await sb.auth.getUser();
+  _userId = user.id;
+  const { data: row } = await sb.from('run_sheets')
+    .select('data, org_config')
+    .eq('user_id', _userId).single();
+  _data   = row?.data       || {};
+  _config = row?.org_config || null;
+}
+
+function subscribeRealtime() {
+  if (_channel) { sb.removeChannel(_channel); _channel = null; }
+  _channel = sb.channel('runsheet-' + _userId)
+    .on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'run_sheets', filter: `user_id=eq.${_userId}` },
+      payload => {
+        _data = payload.new.data;
+        renderOverview();
+        buildRunOfShow();
+        updateLiveButton();
+        const notes = document.getElementById('f-notes');
+        if (notes && document.activeElement !== notes) notes.value = _data.notes || '';
+      })
+    .subscribe();
+}
+
+// Enter key on login fields
+['pw-input','email-input','confirm-pw-input'].forEach(id =>
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') (_authMode === 'signup' ? doSignUp : doLogin)(); }));
+
+// Restore session on page load
+sb.auth.getSession().then(async ({ data: { session } }) => {
+  if (session) {
+    await loadRemoteData();
+    if (!_config) { showWizard(); return; }
+    applyTheme(_config.color);
+    subscribeRealtime();
+    showApp();
+  }
+});
+
+// ── Theme ────────────────────────────────────────────────
+function applyTheme(hex) {
+  let s = document.getElementById('org-theme');
+  if (!s) { s = document.createElement('style'); s.id = 'org-theme'; document.head.appendChild(s); }
+  s.textContent = `
+    .bg-primary { background-color: ${hex} !important; }
+    .text-primary { color: ${hex} !important; }
+    .border-primary { border-color: ${hex} !important; }
+    .f-edit:focus { border-bottom-color: ${hex} !important; }
+    .nav-link.active { color: ${hex} !important; border-right-color: ${hex} !important; }
+    .mob-nav.active { border-top-color: ${hex} !important; }
+    #wiz-card { border-color: ${hex} !important; }
+  `;
+  if (_config) {
+    document.title = `Sound Production | ${_config.name}`;
+    ['sidebar-church-name','header-church-name'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = _config.name;
+    });
+  }
+}
+
+// ── Wizard ───────────────────────────────────────────────
+let _wizStep = 1;
+const WIZ_TOTAL = 6;
+
+// Default config pre-populated with CCA's setup so existing users just click Finish
+let _wiz = {
+  name: '',
+  color: '#15422e',
+  console_channels: 24,
+  inputs: [
+    {location:'Piano',       default_role:'Lead Vocals'},
+    {location:'Stage Left',  default_role:''},
+    {location:'Altar',       default_role:''},
+    {location:'Pulpit',      default_role:''},
+    {location:'Organ',       default_role:''},
+    {location:'Choir',       default_role:''},
+    {location:'Choir',       default_role:''}
+  ],
+  headsets: [
+    {label:'Headset 1', role:'Clergy'},
+    {label:'Headset 2', role:'Clergy'}
+  ],
+  wireless: [
+    {label:'Wireless 1', role:'Podium / Reader'},
+    {label:'Wireless 2', role:'Announcements'},
+    {label:'Wireless 3', role:'Flexible'},
+    {label:'Wireless 4', role:'Flexible'}
+  ],
+  prayer_book:  'bcp1979',
+  service_type: 'ang_eucharist'
+};
+
+function showWizard() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('wizard-screen').style.display = 'flex';
+  _wizStep = 1;
+  renderWizStep();
+}
+
+function renderWizStep() {
+  // Step dots
+  for (let i = 1; i <= WIZ_TOTAL; i++) {
+    const dot = document.getElementById(`wiz-dot-${i}`);
+    if (dot) dot.className = `w-2 h-2 rounded-full ${i === _wizStep ? 'bg-primary' : 'bg-outline-variant'}`;
+  }
+  document.getElementById('wiz-step-label').textContent = `Step ${_wizStep} of ${WIZ_TOTAL}`;
+  document.getElementById('wiz-back').style.display = _wizStep === 1 ? 'none' : 'block';
+  document.getElementById('wiz-next').textContent = _wizStep === WIZ_TOTAL ? 'Finish Setup' : 'Next →';
+
+  const content = document.getElementById('wiz-content');
+  if (_wizStep === 1) {
+    content.innerHTML = `
+      <h3 class="font-headline font-bold text-xl mb-1">Welcome! Let's set up your church.</h3>
+      <p class="text-on-surface-variant text-sm mb-6">This takes about a minute.</p>
+      <div class="space-y-4">
+        <div>
+          <label class="label-xs text-on-surface-variant block mb-1.5">Church Name</label>
+          <input id="wiz-name" type="text" class="f-edit" style="display:block" placeholder="e.g. Christ Church Anglican GR" value="${esc(_wiz.name)}" oninput="wizPreviewName(this.value)"/>
+          <p id="wiz-name-err" class="text-xs text-error font-medium mt-1 hidden">Please enter your church name.</p>
+        </div>
+        <div>
+          <label class="label-xs text-on-surface-variant block mb-1.5">Theme Colour</label>
+          <div class="flex items-center gap-3">
+            <input id="wiz-color" type="color" class="f-edit" style="display:block; max-width:80px" value="${esc(_wiz.color)}" oninput="wizPreviewColor(this.value)"/>
+            <span class="text-on-surface-variant text-xs">This sets your button and accent colour.</span>
+          </div>
+        </div>
+      </div>`;
+  } else if (_wizStep === 2) {
+    const opts = [8,16,24,32,48,64].map(n =>
+      `<option value="${n}"${n === _wiz.console_channels ? ' selected' : ''}>${n} channels</option>`
+    ).join('');
+    content.innerHTML = `
+      <h3 class="font-headline font-bold text-xl mb-1">Your Console</h3>
+      <p class="text-on-surface-variant text-sm mb-6">How many channels does your mixing console have?</p>
+      <div>
+        <label class="label-xs text-on-surface-variant block mb-1.5">Channel Count</label>
+        <select id="wiz-channels" class="f-edit" style="display:block; max-width:200px">${opts}</select>
+      </div>`;
+  } else if (_wizStep === 3) {
+    content.innerHTML = `
+      <h3 class="font-headline font-bold text-xl mb-1">Stage Inputs</h3>
+      <p class="text-on-surface-variant text-sm mb-4">How many inputs does your stage have? Give each a location and optional default role.</p>
+      <div class="flex items-center gap-3 mb-4">
+        <label class="label-xs text-on-surface-variant">Number of inputs</label>
+        <input id="wiz-input-count" type="number" min="1" max="24" value="${_wiz.inputs.length}" class="f-edit" style="display:block; max-width:70px" oninput="wizUpdateInputCount(this.value)"/>
+      </div>
+      <div class="flex gap-2 mb-1">
+        <span class="label-xs text-on-surface-variant w-6 flex-shrink-0"></span>
+        <span class="label-xs text-on-surface-variant flex-1">Location</span>
+        <span class="label-xs text-on-surface-variant flex-1">Default Role</span>
+        <span class="w-4"></span>
+      </div>
+      <div id="wiz-input-rows" class="space-y-2 max-h-56 overflow-y-auto">${wizInputRows()}</div>`;
+  } else if (_wizStep === 4) {
+    content.innerHTML = `
+      <h3 class="font-headline font-bold text-xl mb-1">Wireless Microphones</h3>
+      <p class="text-on-surface-variant text-sm mb-5">Configure your headsets and wireless/handheld mics.</p>
+      <div class="space-y-5">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <label class="label-xs text-on-surface-variant">Headsets</label>
+            <input id="wiz-hs-count" type="number" min="0" max="8" value="${_wiz.headsets.length}" class="f-edit" style="display:block; max-width:60px" oninput="wizUpdateHsCount(this.value)"/>
+          </div>
+          <div id="wiz-hs-rows" class="space-y-2">${wizHsRows()}</div>
+        </div>
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <label class="label-xs text-on-surface-variant">Wireless / Handhelds</label>
+            <input id="wiz-w-count" type="number" min="0" max="12" value="${_wiz.wireless.length}" class="f-edit" style="display:block; max-width:60px" oninput="wizUpdateWCount(this.value)"/>
+          </div>
+          <div id="wiz-w-rows" class="space-y-2">${wizWRows()}</div>
+        </div>
+      </div>`;
+  } else if (_wizStep === 5) {
+    const books = [
+      { value: 'bcp1979',  label: 'BCP 1979 (Episcopal / TEC)' },
+      { value: 'acna2019', label: 'ACNA 2019 Prayer Book' },
+      { value: 'roman',    label: 'Roman Rite (Catholic)' },
+      { value: 'lutheran', label: 'Lutheran (ELW)' },
+      { value: 'custom',   label: 'Other / Custom' },
+    ];
+    const opts = books.map(b =>
+      `<option value="${b.value}"${_wiz.prayer_book === b.value ? ' selected' : ''}>${b.label}</option>`
+    ).join('');
+    content.innerHTML = `
+      <h3 class="font-headline font-bold text-xl mb-1">Prayer Book Tradition</h3>
+      <p class="text-on-surface-variant text-sm mb-6">This determines which lectionary and collect data is displayed on your run sheet.</p>
+      <div>
+        <label class="label-xs text-on-surface-variant block mb-1.5">Select your tradition</label>
+        <select id="wiz-prayerbook" class="f-edit" style="display:block; max-width:300px">${opts}</select>
+      </div>
+      <p class="text-xs text-on-surface-variant mt-4">You can change this later in Settings.</p>`;
+  } else if (_wizStep === 6) {
+    const types = Object.entries(SERVICE_TEMPLATES).map(([k, v]) =>
+      `<option value="${k}"${_wiz.service_type === k ? ' selected' : ''}>${v.label}</option>`
+    ).join('');
+    content.innerHTML = `
+      <h3 class="font-headline font-bold text-xl mb-1">Default Service Type</h3>
+      <p class="text-on-surface-variant text-sm mb-6">Sets the default Run of Show cue sequence. You can load a template or customise cues for each service.</p>
+      <div>
+        <label class="label-xs text-on-surface-variant block mb-1.5">Service type</label>
+        <select id="wiz-svctype" class="f-edit" style="display:block; max-width:300px">${types}</select>
+      </div>`;
+  }
+}
+
+function wizInputRows() {
+  return _wiz.inputs.map((inp, i) => `
+    <div class="flex gap-2 items-center">
+      <span class="label-xs text-on-surface-variant w-6 text-center flex-shrink-0">${i+1}</span>
+      <input id="wiz-il-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="e.g. Piano" value="${esc(inp.location)}"/>
+      <input id="wiz-ir-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="e.g. Lead Vocals" value="${esc(inp.default_role)}" list="liturgical-roles-list"/>
+    </div>`).join('');
+}
+function wizHsRows() {
+  return _wiz.headsets.map((h, i) => `
+    <div class="flex gap-2 items-center">
+      <input id="wiz-hl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(h.label)}"/>
+      <input id="wiz-hr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(h.role)}" list="liturgical-roles-list"/>
+    </div>`).join('');
+}
+function wizWRows() {
+  return _wiz.wireless.map((w, i) => `
+    <div class="flex gap-2 items-center">
+      <input id="wiz-wl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(w.label)}"/>
+      <input id="wiz-wr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(w.role)}" list="liturgical-roles-list"/>
+    </div>`).join('');
+}
+
+function wizPreviewName(val) { /* live preview — no-op needed for now */ }
+function wizPreviewColor(hex) {
+  document.getElementById('wiz-card').style.borderColor = hex;
+}
+
+function wizUpdateInputCount(val) {
+  wizSyncInputs();
+  const n = Math.max(1, Math.min(24, parseInt(val) || 1));
+  while (_wiz.inputs.length < n) _wiz.inputs.push({location:'', default_role:''});
+  _wiz.inputs = _wiz.inputs.slice(0, n);
+  document.getElementById('wiz-input-rows').innerHTML = wizInputRows();
+}
+function wizUpdateHsCount(val) {
+  wizSyncWireless();
+  const n = Math.max(0, Math.min(8, parseInt(val) || 0));
+  while (_wiz.headsets.length < n) _wiz.headsets.push({label:`Headset ${_wiz.headsets.length+1}`, role:''});
+  _wiz.headsets = _wiz.headsets.slice(0, n);
+  document.getElementById('wiz-hs-rows').innerHTML = wizHsRows();
+}
+function wizUpdateWCount(val) {
+  wizSyncWireless();
+  const n = Math.max(0, Math.min(12, parseInt(val) || 0));
+  while (_wiz.wireless.length < n) _wiz.wireless.push({label:`Wireless ${_wiz.wireless.length+1}`, role:''});
+  _wiz.wireless = _wiz.wireless.slice(0, n);
+  document.getElementById('wiz-w-rows').innerHTML = wizWRows();
+}
+
+function wizSyncInputs() {
+  _wiz.inputs.forEach((_, i) => {
+    const l = document.getElementById(`wiz-il-${i}`);
+    const r = document.getElementById(`wiz-ir-${i}`);
+    if (l) _wiz.inputs[i].location     = l.value;
+    if (r) _wiz.inputs[i].default_role = r.value;
+  });
+}
+function wizSyncWireless() {
+  _wiz.headsets.forEach((_, i) => {
+    const l = document.getElementById(`wiz-hl-${i}`);
+    const r = document.getElementById(`wiz-hr-${i}`);
+    if (l) _wiz.headsets[i].label = l.value;
+    if (r) _wiz.headsets[i].role  = r.value;
+  });
+  _wiz.wireless.forEach((_, i) => {
+    const l = document.getElementById(`wiz-wl-${i}`);
+    const r = document.getElementById(`wiz-wr-${i}`);
+    if (l) _wiz.wireless[i].label = l.value;
+    if (r) _wiz.wireless[i].role  = r.value;
+  });
+}
+
+function wizSaveCurrentStep() {
+  if (_wizStep === 1) {
+    const name = document.getElementById('wiz-name')?.value.trim();
+    const errEl = document.getElementById('wiz-name-err');
+    if (!name) { errEl?.classList.remove('hidden'); return false; }
+    errEl?.classList.add('hidden');
+    _wiz.name  = name;
+    _wiz.color = document.getElementById('wiz-color')?.value || _wiz.color;
+  } else if (_wizStep === 2) {
+    _wiz.console_channels = parseInt(document.getElementById('wiz-channels')?.value) || 24;
+  } else if (_wizStep === 3) {
+    wizSyncInputs();
+    // Clean up empty location names
+    _wiz.inputs = _wiz.inputs.map((inp, i) => ({
+      location:     inp.location.trim()     || `Input ${i+1}`,
+      default_role: inp.default_role.trim()
+    }));
+  } else if (_wizStep === 4) {
+    wizSyncWireless();
+    _wiz.headsets = _wiz.headsets.map((h, i) => ({
+      label: h.label.trim() || `Headset ${i+1}`,
+      role:  h.role.trim()
+    }));
+    _wiz.wireless = _wiz.wireless.map((w, i) => ({
+      label: w.label.trim() || `Wireless ${i+1}`,
+      role:  w.role.trim()
+    }));
+  } else if (_wizStep === 5) {
+    _wiz.prayer_book = document.getElementById('wiz-prayerbook')?.value || 'bcp1979';
+  } else if (_wizStep === 6) {
+    _wiz.service_type = document.getElementById('wiz-svctype')?.value || 'ang_eucharist';
+  }
+  return true;
+}
+
+function wizBack() {
+  wizSaveCurrentStep();
+  _wizStep--;
+  renderWizStep();
+}
+
+function wizNext() {
+  if (!wizSaveCurrentStep()) return;
+  if (_wizStep < WIZ_TOTAL) {
+    _wizStep++;
+    renderWizStep();
+  } else {
+    finishWizard();
+  }
+}
+
+function finishWizard() {
+  saveOrgConfig(_wiz);
+  applyTheme(_wiz.color);
+  subscribeRealtime();
+  showApp();
+}
+
+// ── Nav ─────────────────────────────────────────────────
+function goTo(id) {
+  // Tear down live mode if we're leaving it
+  const leavingLive = !!document.querySelector('#section-live.active');
+  if (leavingLive) {
+    document.removeEventListener('keydown', _liveKeyHandler);
+    document.body.classList.remove('live-active');
+  }
+
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.section === id));
+  document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === 'section-' + id));
+
+  if (id === 'settings') loadSettingsForm();
+  if (id === 'plan')     { buildRunOfShow(); renderLiturgyCard(); }
+  if (id === 'live') {
+    const ros = getData().run_of_show || [];
+    const emptyEl = document.getElementById('live-empty');
+    const cuesEl  = document.getElementById('live-cues');
+    if (ros.length === 0) {
+      if (emptyEl) emptyEl.style.display = 'flex';
+      if (cuesEl)  cuesEl.style.display  = 'none';
+    } else {
+      if (emptyEl) emptyEl.style.display = 'none';
+      if (cuesEl)  cuesEl.style.display  = 'flex';
+      _liveIdx = 0;
+      renderLiveCue();
+      document.addEventListener('keydown', _liveKeyHandler);
+    }
+    document.body.classList.add('live-active');
+    window.scrollTo(0, 0);
+  }
+}
+document.querySelectorAll('[data-section]').forEach(l => l.addEventListener('click', () => goTo(l.dataset.section)));
+
+// ── Liturgical Calendar ──────────────────────────────────
+const LITURGICAL_COLORS = {
+  White:'#e8e0d0', Red:'#b33030', Purple:'#5b2d82',
+  Green:'#2d6a35', Rose:'#c2607a',
+};
+
+function getLiturgicalDay(date) {
+  const dow  = date.getDay();
+  const y    = date.getFullYear();
+  const ORDS = ['First','Second','Third','Fourth','Fifth','Sixth','Seventh','Eighth','Ninth',
+                'Tenth','Eleventh','Twelfth','Thirteenth','Fourteenth','Fifteenth','Sixteenth',
+                'Seventeenth','Eighteenth','Nineteenth','Twentieth','Twenty-First','Twenty-Second',
+                'Twenty-Third','Twenty-Fourth','Twenty-Fifth','Twenty-Sixth','Twenty-Seventh'];
+  const WDAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  function add(d, n)  { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+  function noon(d)    { return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); }
+  function dp(a, b)   { return Math.round((+noon(a) - +noon(b)) / 86400000); }
+  function same(a, b) { return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+  function computeEaster(yr) {
+    const a=yr%19,b=Math.floor(yr/100),c=yr%100,d=Math.floor(b/4),e=b%4;
+    const f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
+    const h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4;
+    const l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+    return new Date(yr, Math.floor((h+l-7*m+114)/31)-1, ((h+l-7*m+114)%31)+1);
+  }
+  function computeAdvent1(yr) {
+    const d25=new Date(yr,11,25); return add(d25, -(21+d25.getDay()));
+  }
+  for (const ey of [y, y-1]) {
+    const E = computeEaster(ey);
+    const d = dp(date, E);
+    if (d === -49 && dow === 0) return { name:'The Last Sunday after the Epiphany', color:'White' };
+    if (d < -46) continue;
+    if (d === -46) return { name:'Ash Wednesday', color:'Purple' };
+    if (d >= -45 && d <= -43) return { name:`${WDAY[dow]} after Ash Wednesday`, color:'Purple' };
+    if (d >= -42 && d <= -8) {
+      const wk  = Math.ceil((d + 43) / 7);
+      const col = (wk===4 && dow===0) ? 'Rose' : 'Purple';
+      if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday of Lent`, color:col };
+      return { name:`${WDAY[dow]}, ${ORDS[wk-1]} Week of Lent`, color:'Purple' };
+    }
+    const HW = {'-7':['Palm Sunday','Red'],'-6':['Monday in Holy Week','Red'],
+                '-5':['Tuesday in Holy Week','Red'],'-4':['Wednesday in Holy Week','Red'],
+                '-3':['Maundy Thursday','White'],'-2':['Good Friday','Red'],'-1':['Holy Saturday','White']};
+    if (HW[d]) return { name:HW[d][0], color:HW[d][1] };
+    if (d === 0) return { name:'Easter Day', color:'White' };
+    if (d >= 1 && d <= 6) return { name:`${WDAY[dow]} of Easter Week`, color:'White' };
+    if (d === 39) return { name:'Ascension Day', color:'White' };
+    if (d >= 7 && d <= 48) {
+      const wk = Math.floor(d/7) + 1;
+      if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday of Easter`, color:'White' };
+      return { name:`${WDAY[dow]}, ${ORDS[Math.floor(d/7)]||''} Week of Easter`, color:'White' };
+    }
+    if (d === 49) return { name:'The Day of Pentecost', color:'Red' };
+    if (d === 56) return { name:'Trinity Sunday', color:'White' };
+    if (d > 56) {
+      const adv = computeAdvent1(ey);
+      if (dp(date, adv) < 0) {
+        const wk = Math.floor((d - 49) / 7);
+        if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday after Pentecost`, color:'Green' };
+        return { name:`${WDAY[dow]}, ${ORDS[wk-1]} Week after Pentecost`, color:'Green' };
+      }
+    }
+  }
+  for (const ay of [y, y-1]) {
+    const adv = computeAdvent1(ay);
+    const d   = dp(date, adv);
+    if (d < 0 || d >= 28) continue;
+    const wk  = Math.floor(d / 7) + 1;
+    const col = (wk===3 && dow===0) ? 'Rose' : 'Purple';
+    if (dow === 0) return { name:`The ${ORDS[wk-1]} Sunday of Advent`, color:col };
+    return { name:`${WDAY[dow]}, ${ORDS[wk-1]} Week of Advent`, color:'Purple' };
+  }
+  for (const cy of [y, y-1]) {
+    const xmas = new Date(cy, 11, 25);
+    const dx   = dp(date, xmas);
+    if (dx === 0) return { name:'Christmas Day', color:'White' };
+    if (dx > 0 && dx <= 11) {
+      if (date.getMonth()===0 && date.getDate()===1) return { name:'Holy Name of Jesus', color:'White' };
+      function add2(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
+      const s1 = add2(xmas, (7 - xmas.getDay()) % 7 || 7);
+      if (dow===0 && same(date,s1)) return { name:'The First Sunday of Christmas', color:'White' };
+      if (dow===0 && same(date, add2(s1,7))) return { name:'The Second Sunday of Christmas', color:'White' };
+      return { name:'Christmastide', color:'White' };
+    }
+    const epiph = new Date(cy+1, 0, 6);
+    if (same(date, epiph)) return { name:'The Epiphany', color:'White' };
+    const de = dp(date, epiph);
+    if (de > 0 && de <= 56) {
+      const epDow   = epiph.getDay();
+      function add3(d,n){const r=new Date(d);r.setDate(r.getDate()+n);return r;}
+      const baptism = add3(epiph, epDow===0 ? 7 : 7-epDow);
+      if (same(date, baptism)) return { name:'The Baptism of Our Lord', color:'White' };
+      const db = dp(date, baptism);
+      if (db > 0) {
+        const wk = Math.floor(db/7) + 1;
+        if (dow===0) return { name:`The ${ORDS[wk-1]} Sunday of Epiphany`, color:'Green' };
+        const ww = Math.floor(db/7) + 2;
+        return { name:`${WDAY[dow]}, ${ORDS[ww-2]||ORDS[0]} Week of Epiphany`, color:'Green' };
+      }
+      return { name:`${WDAY[dow]} after the Epiphany`, color:'White' };
+    }
+  }
+  return null;
+}
+
+function showLiturgicalDay() {
+  const result = getLiturgicalDay(new Date());
+  if (!result) return;
+  const wrap = document.getElementById('header-liturgical');
+  const chip = document.getElementById('header-liturgical-chip');
+  const name = document.getElementById('header-liturgical-name');
+  if (!wrap) return;
+  chip.style.background = LITURGICAL_COLORS[result.color] || '#888';
+  name.textContent      = result.name;
+  wrap.classList.remove('hidden');
+  wrap.classList.add('flex');
+}
+
+// ── Init ────────────────────────────────────────────────
+function init() {
+  tickClock();
+  buildWirelessSection();
+  initRoutingSelects();
+  buildInputsTable();
+  renderOverview();
+  loadNotes();
+  buildRunOfShow();
+  updateLiveButton();
+  renderLiturgyCard();
+  showLiturgicalDay();
+  // Update inputs heading
+  const h = document.getElementById('inputs-heading');
+  if (h && _config) h.textContent = `Stage Inputs — ${_config.inputs.length} Input${_config.inputs.length !== 1 ? 's' : ''}`;
+}
+
+// ── Edit mode ────────────────────────────────────────────
+function startEdit() {
+  const d = getData();
+  (_config.headsets || []).forEach((_, i) => {
+    const n = i + 1;
+    const fe = document.getElementById(`f-hs${n}`);
+    const rt = document.getElementById(`f-hs${n}rt`);
+    if (fe) fe.value = d[`hs${n}`]   || '';
+    if (rt) rt.value = d[`hs${n}rt`] || '';
+  });
+  (_config.wireless || []).forEach((_, i) => {
+    const n = i + 1;
+    const fe = document.getElementById(`f-w${n}`);
+    const rt = document.getElementById(`f-w${n}rt`);
+    if (fe) fe.value = d[`w${n}`]   || '';
+    if (rt) rt.value = d[`w${n}rt`] || '';
+  });
+  (_config.inputs || []).forEach((inp, i) => {
+    const n = i + 1;
+    const re  = document.getElementById(`f-i${n}r`);
+    const me  = document.getElementById(`f-i${n}m`);
+    const rte = document.getElementById(`f-i${n}rt`);
+    if (re)  re.value  = d[`i${n}r`]  !== undefined ? d[`i${n}r`]  : (inp.default_role || '');
+    if (me)  me.value  = d[`i${n}m`]  || '';
+    if (rte) rte.value = d[`i${n}rt`] || '';
+  });
+  document.body.classList.add('editing');
+}
+
+function cancelEdit() {
+  document.body.classList.remove('editing');
+}
+
+function saveEdit() {
+  const d = getData();
+  (_config.headsets || []).forEach((_, i) => {
+    const n = i + 1;
+    const fe = document.getElementById(`f-hs${n}`);
+    const rt = document.getElementById(`f-hs${n}rt`);
+    d[`hs${n}`]   = fe ? fe.value.trim() : '';
+    d[`hs${n}rt`] = rt ? rt.value.trim() : '';
+  });
+  (_config.wireless || []).forEach((_, i) => {
+    const n = i + 1;
+    const fe = document.getElementById(`f-w${n}`);
+    const rt = document.getElementById(`f-w${n}rt`);
+    d[`w${n}`]   = fe ? fe.value.trim() : '';
+    d[`w${n}rt`] = rt ? rt.value.trim() : '';
+  });
+  (_config.inputs || []).forEach((_, i) => {
+    const n = i + 1;
+    const re  = document.getElementById(`f-i${n}r`);
+    const me  = document.getElementById(`f-i${n}m`);
+    const rte = document.getElementById(`f-i${n}rt`);
+    d[`i${n}r`]  = re  ? re.value.trim()  : '';
+    d[`i${n}m`]  = me  ? me.value.trim()  : '';
+    d[`i${n}rt`] = rte ? rte.value.trim() : '';
+  });
+  syncRosFromDOM();
+  saveData(d);
+  document.body.classList.remove('editing');
+  renderOverview();
+  buildRunOfShow();
+  updateLiveButton();
+}
+
+// ── Render Overview ──────────────────────────────────────
+function renderOverview() {
+  const d = getData();
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (val) { el.textContent = val; el.classList.remove('empty'); }
+    else     { el.textContent = '—'; el.classList.add('empty'); }
+  };
+  const setRt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v || ''; };
+
+  (_config?.headsets || []).forEach((_, i) => {
+    const n = i + 1;
+    setVal(`v-hs${n}`, d[`hs${n}`]);
+    setRt(`v-hs${n}rt`, d[`hs${n}rt`]);
+  });
+  (_config?.wireless || []).forEach((_, i) => {
+    const n = i + 1;
+    setVal(`v-w${n}`, d[`w${n}`]);
+    setRt(`v-w${n}rt`, d[`w${n}rt`]);
+  });
+  (_config?.inputs || []).forEach((inp, i) => {
+    const n = i + 1;
+    const role    = d[`i${n}r`]  !== undefined ? d[`i${n}r`]  : (inp.default_role || '');
+    const mus     = d[`i${n}m`]  || '';
+    const routing = d[`i${n}rt`] || '';
+    const rv  = document.getElementById(`v-i${n}r`);
+    const mv  = document.getElementById(`v-i${n}m`);
+    const rtv = document.getElementById(`v-i${n}rt`);
+    if (rv)  { rv.textContent  = role    || 'Not set';    rv.classList.toggle('empty', !role); }
+    if (mv)  { mv.textContent  = mus     || 'Unassigned'; mv.classList.toggle('empty', !mus);  }
+    if (rtv) { rtv.textContent = routing || '—';          rtv.classList.toggle('empty', !routing); }
+  });
+}
+
+// ── Build wireless section ───────────────────────────────
+function buildWirelessSection() {
+  if (!_config) return;
+  const d = getData();
+  const grid = document.getElementById('wireless-grid');
+  let html = '';
+  (_config.headsets || []).forEach((hs, i) => {
+    const n = i + 1;
+    html += `<div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2 border-primary">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-outlined text-primary" style="font-size:18px">headset_mic</span>
+        <span class="label-xs text-on-surface-variant">${esc(hs.label)}${hs.role ? ' · ' + esc(hs.role) : ''}</span>
+      </div>
+      <span class="f-view val" id="v-hs${n}">—</span>
+      <input class="f-edit" type="text" id="f-hs${n}" placeholder="${esc(hs.label)}"/>
+      <div class="mt-2">
+        <span class="f-view label-xs text-on-surface-variant/60" id="v-hs${n}rt"></span>
+        <select class="f-edit text-sm" id="f-hs${n}rt">${chOpts(d[`hs${n}rt`] || '')}</select>
+      </div>
+    </div>`;
+  });
+  (_config.wireless || []).forEach((w, i) => {
+    const n = i + 1;
+    html += `<div class="bg-surface-container-lowest rounded-2xl p-5 shadow-sm border-b-2 border-primary" style="opacity:0.85">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-outlined text-primary" style="font-size:18px">mic</span>
+        <span class="label-xs text-on-surface-variant">${esc(w.label)}${w.role ? ' · ' + esc(w.role) : ''}</span>
+      </div>
+      <span class="f-view val" id="v-w${n}">—</span>
+      <input class="f-edit" type="text" id="f-w${n}" placeholder="Assigned person"/>
+      <div class="mt-2">
+        <span class="f-view label-xs text-on-surface-variant/60" id="v-w${n}rt"></span>
+        <select class="f-edit text-sm" id="f-w${n}rt">${chOpts(d[`w${n}rt`] || '')}</select>
+      </div>
+    </div>`;
+  });
+  grid.innerHTML = html;
+}
+
+// ── Channel routing helpers ───────────────────────────────
+function chOpts(selected) {
+  const max = _config?.console_channels || 24;
+  let o = '<option value="">—</option>';
+  for (let i = 1; i <= max; i++) {
+    const v = `Ch ${i}`;
+    o += `<option value="${v}"${selected === v ? ' selected' : ''}>${v}</option>`;
+  }
+  return o;
+}
+
+function initRoutingSelects() {
+  if (!_config) return;
+  const d = getData();
+  (_config.headsets || []).forEach((_, i) => {
+    const n = i + 1;
+    const el = document.getElementById(`f-hs${n}rt`);
+    if (el) el.innerHTML = chOpts(d[`hs${n}rt`] || '');
+  });
+  (_config.wireless || []).forEach((_, i) => {
+    const n = i + 1;
+    const el = document.getElementById(`f-w${n}rt`);
+    if (el) el.innerHTML = chOpts(d[`w${n}rt`] || '');
+  });
+}
+
+// ── Build stage inputs table ─────────────────────────────
+function buildInputsTable() {
+  if (!_config) return;
+  const d = getData();
+  const tbody = document.getElementById('inputs-tbody');
+  let rows = '';
+  (_config.inputs || []).forEach((inp, i) => {
+    const n       = i + 1;
+    const role    = d[`i${n}r`]  !== undefined ? d[`i${n}r`]  : (inp.default_role || '');
+    const mus     = d[`i${n}m`]  || '';
+    const routing = d[`i${n}rt`] || '';
+    rows += `<tr class="bg-surface-container-lowest rounded-xl">
+      <td class="px-5 py-3 rounded-l-xl font-headline font-black text-primary text-sm">${String(n).padStart(2,'0')}</td>
+      <td class="px-5 py-3 label-xs text-on-surface-variant">${esc(inp.location)}</td>
+      <td class="px-3 py-2">
+        <span class="f-view val ${role ? '' : 'empty'}" id="v-i${n}r">${esc(role) || 'Not set'}</span>
+        <input class="f-edit text-sm" type="text" id="f-i${n}r" value="${esc(role)}" placeholder="Role / Instrument" list="liturgical-roles-list"/>
+      </td>
+      <td class="px-3 py-2">
+        <span class="f-view val ${mus ? '' : 'empty'}" id="v-i${n}m">${esc(mus) || 'Unassigned'}</span>
+        <input class="f-edit text-sm" type="text" id="f-i${n}m" value="${esc(mus)}" placeholder="Musician name"/>
+      </td>
+      <td class="px-3 py-2 rounded-r-xl">
+        <span class="f-view val ${routing ? '' : 'empty'}" id="v-i${n}rt">${esc(routing) || '—'}</span>
+        <select class="f-edit text-sm" id="f-i${n}rt">${chOpts(routing)}</select>
+      </td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows;
+}
+
+// ── Live clock ────────────────────────────────────────────
+function tickClock() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const timeStr = now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  const hd = document.getElementById('header-date');
+  const ht = document.getElementById('header-time');
+  if (hd) hd.textContent = dateStr;
+  if (ht) ht.textContent = timeStr;
+}
+setInterval(tickClock, 1000);
+tickClock();
+
+function updatePill(d) { /* no-op */ }
+
+// ── Settings config editor ───────────────────────────────
+let _cfgDraft = null;
+
+function loadSettingsForm() {
+  if (!_config) return;
+  _cfgDraft = JSON.parse(JSON.stringify(_config));
+  document.getElementById('cfg-name').value     = _config.name;
+  document.getElementById('cfg-color').value    = _config.color;
+  document.getElementById('cfg-channels').value = _config.console_channels;
+  const pbEl = document.getElementById('cfg-prayerbook');
+  if (pbEl) pbEl.value = _config.prayer_book || 'bcp1979';
+  const stEl = document.getElementById('cfg-svctype');
+  if (stEl) {
+    stEl.innerHTML = Object.entries(SERVICE_TEMPLATES)
+      .map(([k, v]) => `<option value="${k}"${(_config.service_type || 'ang_eucharist') === k ? ' selected' : ''}>${v.label}</option>`)
+      .join('');
+  }
+  renderCfgInputsList();
+  renderCfgHeadsetsList();
+  renderCfgWirelessList();
+  renderPcoStatus();
+}
+
+function syncCfgDraftFromDOM() {
+  (_cfgDraft.inputs || []).forEach((_, i) => {
+    const l = document.getElementById(`cfg-il-${i}`); if (l) _cfgDraft.inputs[i].location     = l.value;
+    const r = document.getElementById(`cfg-ir-${i}`); if (r) _cfgDraft.inputs[i].default_role = r.value;
+  });
+  (_cfgDraft.headsets || []).forEach((_, i) => {
+    const l = document.getElementById(`cfg-hl-${i}`); if (l) _cfgDraft.headsets[i].label = l.value;
+    const r = document.getElementById(`cfg-hr-${i}`); if (r) _cfgDraft.headsets[i].role  = r.value;
+  });
+  (_cfgDraft.wireless || []).forEach((_, i) => {
+    const l = document.getElementById(`cfg-wl-${i}`); if (l) _cfgDraft.wireless[i].label = l.value;
+    const r = document.getElementById(`cfg-wr-${i}`); if (r) _cfgDraft.wireless[i].role  = r.value;
+  });
+}
+
+function renderCfgInputsList() {
+  document.getElementById('cfg-inputs-list').innerHTML = (_cfgDraft.inputs || []).map((inp, i) => `
+    <div class="flex gap-2 items-center">
+      <span class="label-xs text-on-surface-variant w-5 text-center flex-shrink-0">${i+1}</span>
+      <input id="cfg-il-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Location" value="${esc(inp.location)}"/>
+      <input id="cfg-ir-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Default role" value="${esc(inp.default_role)}" list="liturgical-roles-list"/>
+      <button onclick="cfgRemoveInput(${i})" class="text-error font-bold text-base px-1 flex-shrink-0 hover:opacity-70">×</button>
+    </div>`).join('');
+}
+function renderCfgHeadsetsList() {
+  document.getElementById('cfg-headsets-list').innerHTML = (_cfgDraft.headsets || []).map((h, i) => `
+    <div class="flex gap-2 items-center">
+      <input id="cfg-hl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(h.label)}"/>
+      <input id="cfg-hr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(h.role)}" list="liturgical-roles-list"/>
+      <button onclick="cfgRemoveHeadset(${i})" class="text-error font-bold text-base px-1 flex-shrink-0 hover:opacity-70">×</button>
+    </div>`).join('');
+}
+function renderCfgWirelessList() {
+  document.getElementById('cfg-wireless-list').innerHTML = (_cfgDraft.wireless || []).map((w, i) => `
+    <div class="flex gap-2 items-center">
+      <input id="cfg-wl-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Label" value="${esc(w.label)}"/>
+      <input id="cfg-wr-${i}" type="text" class="f-edit flex-1" style="display:block" placeholder="Role" value="${esc(w.role)}" list="liturgical-roles-list"/>
+      <button onclick="cfgRemoveWireless(${i})" class="text-error font-bold text-base px-1 flex-shrink-0 hover:opacity-70">×</button>
+    </div>`).join('');
+}
+
+function cfgAddInput() {
+  syncCfgDraftFromDOM();
+  const n = _cfgDraft.inputs.length + 1;
+  _cfgDraft.inputs.push({location:`Input ${n}`, default_role:''});
+  renderCfgInputsList();
+}
+function cfgRemoveInput(i) {
+  syncCfgDraftFromDOM();
+  _cfgDraft.inputs.splice(i, 1);
+  renderCfgInputsList();
+}
+function cfgAddHeadset() {
+  syncCfgDraftFromDOM();
+  const n = _cfgDraft.headsets.length + 1;
+  _cfgDraft.headsets.push({label:`Headset ${n}`, role:''});
+  renderCfgHeadsetsList();
+}
+function cfgRemoveHeadset(i) {
+  syncCfgDraftFromDOM();
+  _cfgDraft.headsets.splice(i, 1);
+  renderCfgHeadsetsList();
+}
+function cfgAddWireless() {
+  syncCfgDraftFromDOM();
+  const n = _cfgDraft.wireless.length + 1;
+  _cfgDraft.wireless.push({label:`Wireless ${n}`, role:''});
+  renderCfgWirelessList();
+}
+function cfgRemoveWireless(i) {
+  syncCfgDraftFromDOM();
+  _cfgDraft.wireless.splice(i, 1);
+  renderCfgWirelessList();
+}
+
+function saveSetup() {
+  syncCfgDraftFromDOM();
+  const name = document.getElementById('cfg-name').value.trim();
+  const msg  = document.getElementById('setup-msg');
+  if (!name) { flash(msg, 'Church name is required.', 'text-error'); return; }
+  const newCfg = {
+    name,
+    color:            document.getElementById('cfg-color').value,
+    console_channels: parseInt(document.getElementById('cfg-channels').value) || 24,
+    prayer_book:  document.getElementById('cfg-prayerbook')?.value || 'bcp1979',
+    service_type: document.getElementById('cfg-svctype')?.value    || 'ang_eucharist',
+    inputs:   (_cfgDraft.inputs   || []).map((inp, i) => ({ location: inp.location.trim()   || `Input ${i+1}`,   default_role: inp.default_role.trim() })),
+    headsets: (_cfgDraft.headsets || []).map((h, i)   => ({ label:    h.label.trim()         || `Headset ${i+1}`, role:         h.role.trim()          })),
+    wireless: (_cfgDraft.wireless || []).map((w, i)   => ({ label:    w.label.trim()         || `Wireless ${i+1}`,role:         w.role.trim()          })),
+  };
+  saveOrgConfig(newCfg);
+  applyTheme(newCfg.color);
+  buildWirelessSection();
+  initRoutingSelects();
+  buildInputsTable();
+  renderOverview();
+  buildRunOfShow();
+  updateLiveButton();
+  renderLiturgyCard();
+  const h = document.getElementById('inputs-heading');
+  if (h) h.textContent = `Stage Inputs — ${newCfg.inputs.length} Input${newCfg.inputs.length !== 1 ? 's' : ''}`;
+  flash(msg, 'Setup saved!', 'text-primary');
+}
+
+// ── Notes ─────────────────────────────────────────────────
+function loadNotes() { document.getElementById('f-notes').value = getData().notes || ''; }
+let _nt;
+function autoSaveNotes() {
+  clearTimeout(_nt);
+  _nt = setTimeout(() => { const d = getData(); d.notes = document.getElementById('f-notes').value; saveData(d); }, 500);
+}
+
+// ── Reset ────────────────────────────────────────────────
+function resetData() {
+  if (!confirm('Clear all assignments and Run of Show cues?')) return;
+  const d = getData();
+  saveData({ notes: d.notes || '' });
+  buildInputsTable();
+  renderOverview();
+  buildRunOfShow();
+  updateLiveButton();
+}
+
+// ── Live Mode ────────────────────────────────────────────
+let _liveIdx = 0;
+
+// liveEnter/liveExit now delegate to goTo()
+function liveEnter() { goTo('live'); }
+function liveExit()  { goTo('overview'); }
+
+function _liveKeyHandler(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); liveAdvance(); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); liveBack(); }
+  if (e.key === 'Escape')                                                { goTo('plan'); }
+}
+
+function liveAdvance() {
+  const ros = getData().run_of_show || [];
+  if (_liveIdx < ros.length - 1) { _liveIdx++; renderLiveCue(); }
+}
+
+function liveBack() {
+  if (_liveIdx > 0) { _liveIdx--; renderLiveCue(); }
+  else { goTo('plan'); }
+}
+
+function renderLiveCue() {
+  const ros = getData().run_of_show || [];
+  const d   = getData();
+  if (!ros.length) return;
+
+  const cur  = ros[_liveIdx];
+  const prev = ros[_liveIdx - 1];
+  const next = ros[_liveIdx + 1];
+
+  document.getElementById('live-prev-name').textContent    = prev ? prev.name : '';
+  document.getElementById('live-prev').style.visibility    = prev ? 'visible' : 'hidden';
+  document.getElementById('live-next-name').textContent    = next ? next.name : '';
+  document.getElementById('live-next').style.visibility    = next ? 'visible' : 'hidden';
+  document.getElementById('live-current-name').textContent = cur.name;
+  document.getElementById('live-current-note').textContent = cur.note || '';
+  document.getElementById('live-progress').textContent     = `Cue ${_liveIdx + 1} of ${ros.length}`;
+  document.getElementById('live-btn-back').style.opacity   = _liveIdx === 0 ? '0.3' : '1';
+
+  const allMics = [
+    ...(_config.headsets || []).map((h, i) => ({ key:`hs${i+1}`, label:h.label, person: d[`hs${i+1}`] || '' })),
+    ...(_config.wireless || []).map((w, i) => ({ key:`w${i+1}`,  label:w.label, person: d[`w${i+1}`]  || '' })),
+  ];
+  const micsDiv = document.getElementById('live-current-mics');
+  if (cur.mics && cur.mics.length) {
+    micsDiv.innerHTML = cur.mics.map(key => {
+      const m = allMics.find(m => m.key === key);
+      if (!m) return '';
+      return `<div class="rounded-2xl px-4 py-2 text-center" style="background:rgba(255,255,255,0.12)">
+        <p class="label-xs" style="color:#a0cfb4;opacity:0.7">${esc(m.label)}</p>
+        <p class="font-headline font-bold text-sm" style="color:#ffffff">${esc(m.person) || '—'}</p>
+      </div>`;
+    }).join('');
+  } else {
+    micsDiv.innerHTML = `<p class="text-sm" style="color:#a0cfb4;opacity:0.4;font-style:italic">No mics assigned</p>`;
+  }
+}
+
+function updateLiveButton() {
+  const hasRos = (getData().run_of_show || []).length > 0;
+  document.querySelectorAll('.nav-live').forEach(el => {
+    el.classList.toggle('no-cues', !hasRos);
+    el.title = hasRos ? '' : 'Add cues in Service Plan to enable Live mode';
+  });
+}
+
+// ── Print / Export ───────────────────────────────────────
+function printROS() {
+  const d   = getData();
+  const ros = d.run_of_show || [];
+
+  // Populate print header
+  document.getElementById('print-church-name').textContent = _config?.name || '';
+  document.getElementById('print-date').textContent =
+    new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  // Build wireless mics print table
+  const allMics = [
+    ...(_config.headsets || []).map((h, i) => ({ label:h.label, role:h.role, person: d[`hs${i+1}`] || '—', ch: d[`hs${i+1}rt`] || '—' })),
+    ...(_config.wireless || []).map((w, i) => ({ label:w.label, role:w.role, person: d[`w${i+1}`]  || '—', ch: d[`w${i+1}rt`]  || '—' })),
+  ];
+  const micsHtml = allMics.length ? `
+    <table id="print-mics-table">
+      <thead><tr><th>Mic</th><th>Role</th><th>Assigned To</th><th>Channel</th></tr></thead>
+      <tbody>${allMics.map(m => `<tr>
+        <td>${esc(m.label)}</td>
+        <td>${esc(m.role)}</td>
+        <td style="font-weight:600">${esc(m.person)}</td>
+        <td>${esc(m.ch)}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+    <h2 style="font-size:14pt;font-weight:700;margin:14pt 0 6pt;border-bottom:2px solid #333;padding-bottom:4pt">Cue Sequence</h2>` : '';
+
+  // Build ROS print table
+  const rosHtml = ros.length ? `
+    <table id="print-ros-table">
+      <thead><tr><th>#</th><th>Cue</th><th>Mics</th><th>Note</th></tr></thead>
+      <tbody>${ros.map((cue, i) => {
+        const micNames = (cue.mics || []).map(key => {
+          const idx = key.startsWith('hs') ? parseInt(key.slice(2)) - 1 : null;
+          const widx = key.startsWith('w') && !key.startsWith('hs') ? parseInt(key.slice(1)) - 1 : null;
+          if (idx !== null && _config.headsets?.[idx]) return _config.headsets[idx].label;
+          if (widx !== null && _config.wireless?.[widx]) return _config.wireless[widx].label;
+          return key;
+        }).join(', ');
+        return `<tr>
+          <td>${i+1}</td>
+          <td style="font-weight:600">${esc(cue.name)}</td>
+          <td>${esc(micNames)}</td>
+          <td style="color:#555">${esc(cue.note)}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>` : '<p style="color:#999;font-style:italic">No cues in Run of Show.</p>';
+
+  document.getElementById('ros-print-area').innerHTML = micsHtml + rosHtml;
+  window.print();
+}
+
+// ── Planning Center Online ───────────────────────────────
+const PCO_AUTH_URL  = 'https://api.planningcenteronline.com/oauth/authorize';
+const PCO_TOKEN_URL = 'https://api.planningcenteronline.com/oauth/token';
+const PCO_API_BASE  = 'https://api.planningcenteronline.com';
+
+function pcoGetRedirectUri() {
+  return window.location.origin + window.location.pathname;
+}
+
+function pcoGenerateVerifier() {
+  const arr = new Uint8Array(32);
+  crypto.getRandomValues(arr);
+  return btoa(String.fromCharCode(...arr)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+async function pcoGenerateChallenge(verifier) {
+  const enc  = new TextEncoder().encode(verifier);
+  const hash = await crypto.subtle.digest('SHA-256', enc);
+  return btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+async function pcoConnect() {
+  const clientId = document.getElementById('pco-client-id').value.trim();
+  const msgEl    = document.getElementById('pco-connect-msg');
+  if (!clientId) { flash(msgEl, 'Please enter your PCO App Client ID.', 'text-error'); return; }
+  const verifier  = pcoGenerateVerifier();
+  const challenge = await pcoGenerateChallenge(verifier);
+  localStorage.setItem('pco_verifier',   verifier);
+  localStorage.setItem('pco_client_id',  clientId);
+  const params = new URLSearchParams({
+    client_id:             clientId,
+    redirect_uri:          pcoGetRedirectUri(),
+    response_type:         'code',
+    scope:                 'services',
+    code_challenge:        challenge,
+    code_challenge_method: 'S256',
+  });
+  window.location.href = `${PCO_AUTH_URL}?${params}`;
+}
+
+async function pcoExchangeCode(code) {
+  const clientId = localStorage.getItem('pco_client_id') || '';
+  const verifier = localStorage.getItem('pco_verifier')  || '';
+  const resp = await fetch(PCO_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type:    'authorization_code',
+      code,
+      client_id:     clientId,
+      redirect_uri:  pcoGetRedirectUri(),
+      code_verifier: verifier,
+    })
+  });
+  if (!resp.ok) throw new Error(`Token exchange failed: ${resp.status}`);
+  return resp.json();
+}
+
+async function pcoFetch(path, token) {
+  const resp = await fetch(`${PCO_API_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!resp.ok) throw new Error(`PCO API error ${resp.status}: ${path}`);
+  return resp.json();
+}
+
+function pcoGetToken() { return localStorage.getItem('pco_access_token') || null; }
+
+function pcoClearTokens() {
+  ['pco_access_token','pco_refresh_token','pco_client_id','pco_verifier','pco_org_name'].forEach(k => localStorage.removeItem(k));
+}
+
+function pcoDisconnect() {
+  pcoClearTokens();
+  renderPcoStatus();
+}
+
+function renderPcoStatus() {
+  const token   = pcoGetToken();
+  const orgName = localStorage.getItem('pco_org_name') || '';
+  const connUI  = document.getElementById('pco-connected-ui');
+  const discUI  = document.getElementById('pco-connect-ui');
+  if (!connUI || !discUI) return;
+  if (token) {
+    connUI.style.display = 'block';
+    discUI.style.display = 'none';
+    document.getElementById('pco-org-name').textContent = orgName;
+  } else {
+    connUI.style.display = 'none';
+    discUI.style.display = 'block';
+    const savedId = localStorage.getItem('pco_client_id') || '';
+    const inp = document.getElementById('pco-client-id');
+    if (inp && savedId) inp.value = savedId;
+  }
+}
+
+async function pcoImportPlan() {
+  const token  = pcoGetToken();
+  const msgEl  = document.getElementById('pco-import-msg');
+  if (!token) return;
+  flash(msgEl, 'Fetching upcoming plans…', 'text-on-surface-variant');
+
+  try {
+    // Get service types
+    const stData = await pcoFetch('/services/v2/service_types?per_page=25', token);
+    if (!stData.data?.length) { flash(msgEl, 'No service types found in PCO.', 'text-error'); return; }
+
+    // For each service type, get the next upcoming plan
+    let bestPlan = null, bestTypeId = null;
+    const today  = new Date().toISOString().slice(0,10);
+    for (const st of stData.data) {
+      const plansData = await pcoFetch(
+        `/services/v2/service_types/${st.id}/plans?filter=future&per_page=1&order=sort_date`, token
+      );
+      if (plansData.data?.[0]) {
+        const plan = plansData.data[0];
+        const dt   = plan.attributes?.sort_date?.slice(0,10) || '';
+        if (!bestPlan || dt < (bestPlan.attributes?.sort_date?.slice(0,10) || '9999')) {
+          bestPlan   = plan;
+          bestTypeId = st.id;
+        }
+      }
+    }
+
+    if (!bestPlan) { flash(msgEl, 'No upcoming plans found in PCO.', 'text-error'); return; }
+
+    // Fetch plan items
+    const itemsData = await pcoFetch(
+      `/services/v2/service_types/${bestTypeId}/plans/${bestPlan.id}/items?per_page=100&order=sequence`, token
+    );
+
+    if (!itemsData.data?.length) { flash(msgEl, 'Plan has no items.', 'text-error'); return; }
+
+    // Map items to ROS cues
+    const cues = itemsData.data.map((item, i) => {
+      const attr = item.attributes || {};
+      return {
+        id:   `pco_${item.id}`,
+        name: attr.title || attr.description || `Item ${i+1}`,
+        mics: [],
+        note: attr.description && attr.title ? attr.description : '',
+      };
+    });
+
+    const planTitle  = bestPlan.attributes?.title || bestPlan.attributes?.dates || 'PCO Plan';
+    const planDate   = bestPlan.attributes?.dates || '';
+    const d          = getData();
+    const hadCues    = (d.run_of_show || []).length > 0;
+    if (hadCues && !confirm(`Replace current Run of Show with "${planTitle}" (${planDate}) from Planning Center?`)) return;
+
+    d.run_of_show = cues;
+    buildRunOfShow();
+    updateLiveButton();
+    // Go to overview
+    goTo('overview');
+    flash(msgEl, `Imported ${cues.length} items from "${planTitle}"`, 'text-primary');
+  } catch(e) {
+    console.error('PCO import error:', e);
+    flash(msgEl, `Import failed: ${e.message}`, 'text-error');
+  }
+}
+
+// Handle PCO OAuth callback on page load
+(async function handlePcoOAuthCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code   = params.get('code');
+  if (!code) return;
+  // Clean URL without reloading
+  window.history.replaceState({}, '', window.location.pathname);
+  try {
+    const tokens = await pcoExchangeCode(code);
+    localStorage.setItem('pco_access_token',  tokens.access_token);
+    if (tokens.refresh_token) localStorage.setItem('pco_refresh_token', tokens.refresh_token);
+    // Fetch org name
+    const me = await pcoFetch('/services/v2/me', tokens.access_token);
+    const orgName = me.data?.attributes?.name || '';
+    localStorage.setItem('pco_org_name', orgName);
+  } catch(e) {
+    console.error('PCO OAuth callback failed:', e);
+  }
+})();
+
+// ── Util ──────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Service Templates ────────────────────────────────────
+const SERVICE_TEMPLATES = {
+  ang_eucharist: {
+    label: 'Anglican Eucharist (BCP / ACNA)',
+    cues: [
+      { id:'processional',   name:'Processional Hymn',      mics:[], note:'' },
+      { id:'acclamation',    name:'Opening Acclamation',     mics:[], note:'Celebrant' },
+      { id:'collect_purity', name:'Collect for Purity',      mics:[], note:'' },
+      { id:'kyrie',          name:'Kyrie / Gloria',          mics:[], note:'' },
+      { id:'collect_day',    name:'Collect of the Day',      mics:[], note:'Celebrant' },
+      { id:'ot_lesson',      name:'Old Testament Lesson',    mics:[], note:'Lector' },
+      { id:'psalm',          name:'Psalm',                   mics:[], note:'' },
+      { id:'epistle',        name:'Epistle',                 mics:[], note:'Lector' },
+      { id:'gospel',         name:'Gospel',                  mics:[], note:'Deacon / Celebrant' },
+      { id:'sermon',         name:'Sermon',                  mics:[], note:'Preacher' },
+      { id:'creed',          name:'Nicene Creed',            mics:[], note:'' },
+      { id:'prayers',        name:'Prayers of the People',   mics:[], note:'Intercessor' },
+      { id:'confession',     name:'Confession & Absolution', mics:[], note:'' },
+      { id:'peace',          name:'Peace',                   mics:[], note:'' },
+      { id:'offertory',      name:'Offertory',               mics:[], note:'' },
+      { id:'eucharistic',    name:'Eucharistic Prayer',      mics:[], note:'Celebrant at altar' },
+      { id:'sanctus',        name:'Sanctus / Benedictus',    mics:[], note:'' },
+      { id:'lords_prayer',   name:"Lord's Prayer",           mics:[], note:'' },
+      { id:'fraction',       name:'Fraction Anthem',         mics:[], note:'' },
+      { id:'communion',      name:'Communion',               mics:[], note:'Soft music' },
+      { id:'postcommunion',  name:'Post-Communion Prayer',   mics:[], note:'Celebrant' },
+      { id:'blessing',       name:'Blessing',                mics:[], note:'Celebrant' },
+      { id:'dismissal',      name:'Dismissal',               mics:[], note:'Deacon / Celebrant' },
+      { id:'recessional',    name:'Recessional Hymn',        mics:[], note:'' },
+    ]
+  },
+  mass: {
+    label: 'Roman Rite Mass',
+    cues: [
+      { id:'entrance',       name:'Entrance Antiphon / Hymn', mics:[], note:'' },
+      { id:'penitential',    name:'Penitential Act',           mics:[], note:'' },
+      { id:'kyrie',          name:'Kyrie',                     mics:[], note:'' },
+      { id:'gloria',         name:'Gloria',                    mics:[], note:'' },
+      { id:'collect',        name:'Collect of the Day',        mics:[], note:'Priest' },
+      { id:'first_reading',  name:'First Reading',             mics:[], note:'Lector' },
+      { id:'psalm',          name:'Responsorial Psalm',        mics:[], note:'Cantor' },
+      { id:'second_reading', name:'Second Reading',            mics:[], note:'Lector' },
+      { id:'alleluia',       name:'Gospel Acclamation',        mics:[], note:'' },
+      { id:'gospel',         name:'Gospel',                    mics:[], note:'Deacon / Priest' },
+      { id:'homily',         name:'Homily',                    mics:[], note:'Preacher' },
+      { id:'creed',          name:'Creed',                     mics:[], note:'' },
+      { id:'prayers',        name:'Universal Prayer',          mics:[], note:'Reader' },
+      { id:'offertory',      name:'Offertory',                 mics:[], note:'' },
+      { id:'eucharistic',    name:'Eucharistic Prayer',        mics:[], note:'Priest at altar' },
+      { id:'sanctus',        name:'Holy Holy Holy',            mics:[], note:'' },
+      { id:'lords_prayer',   name:'Our Father',                mics:[], note:'' },
+      { id:'agnus_dei',      name:'Agnus Dei',                 mics:[], note:'' },
+      { id:'communion',      name:'Communion',                 mics:[], note:'' },
+      { id:'prayer_thanks',  name:'Prayer after Communion',    mics:[], note:'' },
+      { id:'blessing',       name:'Final Blessing',            mics:[], note:'Priest' },
+      { id:'dismissal',      name:'Dismissal',                 mics:[], note:'' },
+    ]
+  },
+  morning_prayer: {
+    label: 'Morning Prayer (BCP)',
+    cues: [
+      { id:'opening',     name:'Opening Sentence',      mics:[], note:'Officiant' },
+      { id:'confession',  name:'Confession',             mics:[], note:'' },
+      { id:'invitatory',  name:'Invitatory & Psalm',     mics:[], note:'Cantor' },
+      { id:'ot_lesson',   name:'Old Testament Lesson',   mics:[], note:'Reader' },
+      { id:'canticle1',   name:'Canticle',               mics:[], note:'' },
+      { id:'nt_lesson',   name:'New Testament Lesson',   mics:[], note:'Reader' },
+      { id:'canticle2',   name:'Canticle',               mics:[], note:'' },
+      { id:'creed',       name:"Apostles' Creed",        mics:[], note:'' },
+      { id:'prayers',     name:'Prayers',                mics:[], note:'Officiant' },
+      { id:'collect_day', name:'Collect of the Day',     mics:[], note:'' },
+      { id:'anthem',      name:'Anthem / Hymn',          mics:[], note:'' },
+      { id:'sermon',      name:'Sermon',                 mics:[], note:'Preacher' },
+      { id:'dismissal',   name:'Dismissal',              mics:[], note:'' },
+    ]
+  },
+  evening_prayer: {
+    label: 'Evening Prayer (BCP)',
+    cues: [
+      { id:'opening',     name:'Opening Sentence',     mics:[], note:'Officiant' },
+      { id:'confession',  name:'Confession',            mics:[], note:'' },
+      { id:'phos',        name:'O Gracious Light',      mics:[], note:'Cantor' },
+      { id:'psalm',       name:'Psalm',                 mics:[], note:'' },
+      { id:'lesson1',     name:'First Lesson',          mics:[], note:'Reader' },
+      { id:'magnificat',  name:'Magnificat',            mics:[], note:'' },
+      { id:'lesson2',     name:'Second Lesson',         mics:[], note:'Reader' },
+      { id:'nunc',        name:'Nunc Dimittis',         mics:[], note:'' },
+      { id:'creed',       name:"Apostles' Creed",       mics:[], note:'' },
+      { id:'prayers',     name:'Prayers',               mics:[], note:'' },
+      { id:'collect_day', name:'Collect of the Day',    mics:[], note:'' },
+      { id:'anthem',      name:'Anthem / Hymn',         mics:[], note:'' },
+      { id:'dismissal',   name:'Dismissal',             mics:[], note:'' },
+    ]
+  }
+};
+
+// ── Run of Show ──────────────────────────────────────────
+function buildRunOfShow() {
+  if (!_config) return;
+  const d   = getData();
+  const ros = d.run_of_show || [];
+  const list = document.getElementById('ros-list');
+  if (!list) return;
+
+  // Populate template select
+  const sel = document.getElementById('ros-template-select');
+  if (sel) {
+    sel.innerHTML = '<option value="">Load template…</option>' +
+      Object.entries(SERVICE_TEMPLATES)
+        .map(([k, v]) => `<option value="${k}">${v.label}</option>`)
+        .join('');
+  }
+
+  if (ros.length === 0) {
+    list.innerHTML = `
+      <div class="bg-surface-container-low rounded-3xl p-8 text-center">
+        <span class="material-symbols-outlined text-on-surface-variant" style="font-size:36px;opacity:0.35">playlist_play</span>
+        <p class="text-on-surface-variant text-sm mt-2">No cues yet.</p>
+        <p class="text-xs text-on-surface-variant mt-1" style="opacity:0.6">In Edit mode, load a template or add cues manually.</p>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = ros.map((cue, idx) => rosRowHtml(cue, idx)).join('');
+}
+
+function rosRowHtml(cue, idx) {
+  const allMics = [
+    ...(_config.headsets || []).map((h, i) => ({ key:`hs${i+1}`, label:h.label })),
+    ...(_config.wireless || []).map((w, i) => ({ key:`w${i+1}`,  label:w.label })),
+  ];
+
+  const micChipsView = (cue.mics || []).length
+    ? (cue.mics || []).map(key => {
+        const m = allMics.find(m => m.key === key);
+        return m ? `<span class="inline-block bg-secondary-fixed text-on-secondary-container label-xs px-2 py-0.5 rounded-full">${esc(m.label)}</span>` : '';
+      }).join('')
+    : `<em class="text-xs text-on-surface-variant" style="opacity:0.5">No mics assigned</em>`;
+
+  const micChipsEdit = allMics.map(m => {
+    const active = (cue.mics || []).includes(m.key);
+    return `<button type="button" onclick="rosToggleMic(${idx},'${m.key}')"
+      class="inline-block label-xs px-2 py-0.5 rounded-full transition-colors ${active ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}">${esc(m.label)}</button>`;
+  }).join('');
+
+  return `
+    <div class="bg-surface-container-lowest rounded-2xl p-4 shadow-sm" data-ros-idx="${idx}">
+      <div class="flex items-start gap-3">
+        <span class="label-xs text-on-surface-variant w-5 text-center flex-shrink-0 mt-1" style="padding-top:2px">${idx+1}</span>
+        <div class="flex-1 space-y-2">
+          <div>
+            <span class="f-view font-headline font-semibold text-sm text-on-surface">${esc(cue.name)}</span>
+            <input class="f-edit font-headline font-semibold text-sm" type="text" id="f-ros-name-${idx}" value="${esc(cue.name)}" placeholder="Cue name"/>
+          </div>
+          <div class="ros-mics-wrap">
+            <span class="f-view ros-mics-view">${micChipsView}</span>
+            <span class="f-edit ros-mics-edit" data-ros-mic-idx="${idx}">${micChipsEdit}</span>
+          </div>
+          <div>
+            <span class="f-view text-xs text-on-surface-variant" style="font-style:italic;opacity:0.7">${esc(cue.note) || ''}</span>
+            <input class="f-edit text-xs" type="text" id="f-ros-note-${idx}" value="${esc(cue.note)}" placeholder="Note (e.g. Deacon at lectern)"/>
+          </div>
+        </div>
+        <div class="f-edit ros-row-actions">
+          <button onclick="rosMoveUp(${idx})" class="p-1 text-on-surface-variant" title="Move up">
+            <span class="material-symbols-outlined" style="font-size:16px">arrow_upward</span>
+          </button>
+          <button onclick="rosMoveDown(${idx})" class="p-1 text-on-surface-variant" title="Move down">
+            <span class="material-symbols-outlined" style="font-size:16px">arrow_downward</span>
+          </button>
+          <button onclick="rosDeleteCue(${idx})" class="p-1 text-error" title="Delete">
+            <span class="material-symbols-outlined" style="font-size:16px">delete</span>
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function syncRosFromDOM() {
+  const d   = getData();
+  const ros = d.run_of_show || [];
+  ros.forEach((cue, idx) => {
+    const nameEl = document.getElementById(`f-ros-name-${idx}`);
+    const noteEl = document.getElementById(`f-ros-note-${idx}`);
+    if (nameEl) cue.name = nameEl.value.trim() || cue.name;
+    if (noteEl) cue.note = noteEl.value.trim();
+  });
+  d.run_of_show = ros;
+}
+
+function rosToggleMic(idx, key) {
+  const d   = getData();
+  const ros = d.run_of_show || [];
+  if (!ros[idx]) return;
+  // Preserve any in-progress text edits in this row
+  const nameEl = document.getElementById(`f-ros-name-${idx}`);
+  const noteEl = document.getElementById(`f-ros-note-${idx}`);
+  if (nameEl) ros[idx].name = nameEl.value || ros[idx].name;
+  if (noteEl) ros[idx].note = noteEl.value;
+  // Toggle mic
+  ros[idx].mics = ros[idx].mics || [];
+  const pos = ros[idx].mics.indexOf(key);
+  if (pos === -1) ros[idx].mics.push(key);
+  else            ros[idx].mics.splice(pos, 1);
+  d.run_of_show = ros;
+  // Targeted re-render of mic chips only
+  const allMics = [
+    ...(_config.headsets || []).map((h, i) => ({ key:`hs${i+1}`, label:h.label })),
+    ...(_config.wireless || []).map((w, i) => ({ key:`w${i+1}`,  label:w.label })),
+  ];
+  const row = document.querySelector(`[data-ros-idx="${idx}"]`);
+  if (row) {
+    const editSpan = row.querySelector(`[data-ros-mic-idx="${idx}"]`);
+    if (editSpan) {
+      editSpan.innerHTML = allMics.map(m => {
+        const active = ros[idx].mics.includes(m.key);
+        return `<button type="button" onclick="rosToggleMic(${idx},'${m.key}')"
+          class="inline-block label-xs px-2 py-0.5 rounded-full transition-colors ${active ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}">${esc(m.label)}</button>`;
+      }).join('');
+    }
+    const viewSpan = row.querySelector('.ros-mics-view');
+    if (viewSpan) {
+      viewSpan.innerHTML = ros[idx].mics.length
+        ? ros[idx].mics.map(k => {
+            const m = allMics.find(m => m.key === k);
+            return m ? `<span class="inline-block bg-secondary-fixed text-on-secondary-container label-xs px-2 py-0.5 rounded-full">${esc(m.label)}</span>` : '';
+          }).join('')
+        : `<em class="text-xs text-on-surface-variant" style="opacity:0.5">No mics assigned</em>`;
+    }
+  }
+}
+
+function rosAddCue() {
+  const d = getData();
+  syncRosFromDOM();
+  d.run_of_show = d.run_of_show || [];
+  d.run_of_show.push({ id:`cue_${Date.now()}`, name:'New Cue', mics:[], note:'' });
+  buildRunOfShow();
+  updateLiveButton();
+}
+
+function rosDeleteCue(idx) {
+  syncRosFromDOM();
+  const d = getData();
+  (d.run_of_show || []).splice(idx, 1);
+  buildRunOfShow();
+  updateLiveButton();
+}
+
+function rosMoveUp(idx) {
+  syncRosFromDOM();
+  const d   = getData();
+  const ros = d.run_of_show || [];
+  if (idx === 0) return;
+  [ros[idx-1], ros[idx]] = [ros[idx], ros[idx-1]];
+  buildRunOfShow();
+}
+
+function rosMoveDown(idx) {
+  syncRosFromDOM();
+  const d   = getData();
+  const ros = d.run_of_show || [];
+  if (idx >= ros.length - 1) return;
+  [ros[idx], ros[idx+1]] = [ros[idx+1], ros[idx]];
+  buildRunOfShow();
+}
+
+function applyServiceTemplate(key) {
+  if (!key) return;
+  const tmpl = SERVICE_TEMPLATES[key];
+  if (!tmpl) return;
+  const d = getData();
+  if ((d.run_of_show || []).length > 0) {
+    if (!confirm(`Replace current Run of Show with "${tmpl.label}" template?`)) {
+      document.getElementById('ros-template-select').value = '';
+      return;
+    }
+  }
+  d.run_of_show = tmpl.cues.map(c => ({ ...c, mics: [] }));
+  buildRunOfShow();
+  updateLiveButton();
+  document.getElementById('ros-template-select').value = '';
+}
+
+// ── Lectionary ───────────────────────────────────────────
+let _lectionaryCache = null;
+function getLectionaryData() {
+  if (!_lectionaryCache) {
+    try {
+      const el = document.getElementById('lectionary-raw');
+      _lectionaryCache = el ? JSON.parse(el.textContent) : {};
+    } catch(e) { _lectionaryCache = {}; }
+  }
+  return _lectionaryCache;
+}
+
+function getLectionaryYear(date) {
+  const y = date.getFullYear();
+  function add(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+  function computeAdvent1(yr) {
+    const d25 = new Date(yr, 11, 25);
+    return add(d25, -(21 + d25.getDay()));
+  }
+  const advent = computeAdvent1(y);
+  const effectiveYear = date >= advent ? y + 1 : y;
+  // Year A: effectiveYear % 3 === 1 (e.g. 2026); Year B: % 3 === 2 (e.g. 2027); Year C: % 3 === 0 (e.g. 2025)
+  return ['C','A','B'][effectiveYear % 3];
+}
+
+function getLectionaryDayKey(litDay) {
+  if (!litDay) return null;
+  const n = litDay.name;
+  const MAP = {
+    'The First Sunday of Advent':            'ADVENT1',
+    'The Second Sunday of Advent':           'ADVENT2',
+    'The Third Sunday of Advent':            'ADVENT3',
+    'The Fourth Sunday of Advent':           'ADVENT4',
+    'Christmas Day':                         'CHRISTMAS',
+    'The First Sunday of Christmas':         'XMAS1',
+    'The Second Sunday of Christmas':        'XMAS2',
+    'The Epiphany':                          'EPIPHANY',
+    'The Baptism of Our Lord':               'BAPTISM_LORD',
+    'The First Sunday of Epiphany':          'EPIPHANY1',
+    'The Second Sunday of Epiphany':         'EPIPHANY2',
+    'The Third Sunday of Epiphany':          'EPIPHANY3',
+    'The Fourth Sunday of Epiphany':         'EPIPHANY4',
+    'The Fifth Sunday of Epiphany':          'EPIPHANY5',
+    'The Sixth Sunday of Epiphany':          'EPIPHANY6',
+    'The Last Sunday after the Epiphany':    'EPIPHANY_LAST',
+    'Ash Wednesday':                         'ASH_WED',
+    'The First Sunday of Lent':              'LENT1',
+    'The Second Sunday of Lent':             'LENT2',
+    'The Third Sunday of Lent':              'LENT3',
+    'The Fourth Sunday of Lent':             'LENT4',
+    'The Fifth Sunday of Lent':              'LENT5',
+    'Palm Sunday':                           'PALM',
+    'Maundy Thursday':                       'MAUNDY_THURSDAY',
+    'Good Friday':                           'GOOD_FRIDAY',
+    'Easter Day':                            'EASTER',
+    'The Second Sunday of Easter':           'EASTER2',
+    'The Third Sunday of Easter':            'EASTER3',
+    'The Fourth Sunday of Easter':           'EASTER4',
+    'The Fifth Sunday of Easter':            'EASTER5',
+    'The Sixth Sunday of Easter':            'EASTER6',
+    'Ascension Day':                         'ASCENSION',
+    'The Seventh Sunday of Easter':          'EASTER7',
+    'The Day of Pentecost':                  'PENTECOST',
+    'Trinity Sunday':                        'TRINITY',
+  };
+  if (MAP[n]) return MAP[n];
+  // Sundays after Pentecost → Proper numbers
+  const m = n.match(/The (\w[\w-]*) Sunday after Pentecost/);
+  if (m) {
+    const ORDS = {
+      'First':2,'Second':3,'Third':4,'Fourth':5,'Fifth':6,'Sixth':7,'Seventh':8,
+      'Eighth':9,'Ninth':10,'Tenth':11,'Eleventh':12,'Twelfth':13,'Thirteenth':14,
+      'Fourteenth':15,'Fifteenth':16,'Sixteenth':17,'Seventeenth':18,'Eighteenth':19,
+      'Nineteenth':20,'Twentieth':21,'Twenty-First':22,'Twenty-Second':23,
+      'Twenty-Third':24,'Twenty-Fourth':25,'Twenty-Fifth':26,'Twenty-Sixth':27,'Twenty-Seventh':28
+    };
+    const p = ORDS[m[1]];
+    return p ? `PROPER${p}` : null;
+  }
+  return null;
+}
+
+let _liturgyCardExpanded = false;
+function toggleCollect() { _liturgyCardExpanded = !_liturgyCardExpanded; renderLiturgyCard(); }
+
+function renderLiturgyCard() {
+  const body = document.getElementById('liturgy-card-body');
+  if (!body) return;
+  const today   = new Date();
+  const litDay  = getLiturgicalDay(today);
+  const year    = getLectionaryYear(today);
+  const dayKey  = getLectionaryDayKey(litDay);
+  const data    = getLectionaryData();
+  const entry   = dayKey ? (data[`${year}_${dayKey}`] || data[`ALL_${dayKey}`] || null) : null;
+
+  if (!entry) {
+    body.innerHTML = `
+      <div class="space-y-2">
+        <p class="text-on-surface-variant text-sm">
+          ${litDay ? `<span class="font-semibold text-on-surface">${esc(litDay.name)}</span> — ` : ''}
+          Lectionary Year ${year}${dayKey ? '' : ' — no data for this day'}.
+        </p>
+        ${dayKey ? `<p class="text-xs text-on-surface-variant" style="opacity:0.6">No lectionary entry found for ${year}_${dayKey}.</p>` : ''}
+      </div>`;
+    return;
+  }
+
+  const readingChip = (label, ref) => {
+    if (!ref) return '';
+    const url = `https://www.biblegateway.com/passage/?search=${encodeURIComponent(ref)}&version=NRSVUE`;
+    return `<a href="${url}" target="_blank" rel="noopener"
+      class="bg-surface-container-lowest rounded-xl p-3 shadow-sm hover:shadow-md transition-shadow block">
+      <span class="label-xs text-on-surface-variant block mb-0.5">${label}</span>
+      <span class="text-sm font-semibold text-on-surface">${esc(ref)}</span>
+    </a>`;
+  };
+
+  body.innerHTML = `
+    <div class="space-y-4">
+      ${litDay ? `<p class="label-xs text-on-surface-variant">${esc(litDay.name)} · Year ${year}</p>` : ''}
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        ${readingChip('OT / First', entry.ot)}
+        ${readingChip('Psalm', entry.ps)}
+        ${readingChip('Epistle', entry.ep)}
+        ${readingChip('Gospel', entry.gsp)}
+      </div>
+      ${entry.collect ? `
+      <div class="border-t border-outline-variant pt-3" style="border-opacity:0.2">
+        <div class="flex items-center justify-between mb-2">
+          <span class="label-xs text-on-surface-variant">Collect of the Day</span>
+          <button onclick="toggleCollect()" class="text-xs text-primary font-semibold hover:underline">
+            ${_liturgyCardExpanded ? 'Hide' : 'Show full text'}
+          </button>
+        </div>
+        ${_liturgyCardExpanded
+          ? `<p class="text-sm text-on-surface leading-relaxed" style="font-style:italic">${esc(entry.collect)}</p>`
+          : `<p class="text-sm text-on-surface-variant truncate" style="font-style:italic;opacity:0.75">${esc(entry.collect.substring(0,100))}…</p>`
+        }
+      </div>` : ''}
+    </div>`;
+}
+</script>
+
+<!-- BCP/RCL Lectionary Data (Year A principal Sunday service readings) -->
+<script type="application/json" id="lectionary-raw">
+{
+  "A_MAUNDY_THURSDAY": { "collect": "Almighty Father, whose dear Son, on the night before he suffered, instituted the Sacrament of his Body and Blood: Mercifully grant that we may receive it thankfully in remembrance of Jesus Christ our Lord, who in these holy mysteries gives us a pledge of eternal life; and who now lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Exodus 12:1-4,11-14", "ps": "Psalm 116:1-2,12-19", "ep": "1 Corinthians 11:23-26", "gsp": "John 13:1-17,31b-35" },
+  "A_GOOD_FRIDAY":      { "collect": "Almighty God, we pray you graciously to behold this your family, for whom our Lord Jesus Christ was willing to be betrayed, and given into the hands of sinners, and to suffer death upon the cross; who now lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Isaiah 52:13–53:12", "ps": "Psalm 22", "ep": "Hebrews 10:16-25", "gsp": "John 18:1–19:42" },
+  "A_EASTER":  { "collect": "O God, who for our redemption gave your only-begotten Son to the death of the cross, and by his glorious resurrection delivered us from the power of our enemy: Grant us so to die daily to sin, that we may evermore live with him in the joy of his resurrection; through Jesus Christ your Son our Lord, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Acts 10:34-43", "ps": "Psalm 118:14-29", "ep": "Colossians 3:1-4", "gsp": "John 20:1-18" },
+  "A_EASTER2": { "collect": "Almighty and everlasting God, who in the Paschal mystery established the new covenant of reconciliation: Grant that all who have been reborn into the fellowship of Christ's Body may show forth in their lives what they profess by their faith; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Acts 2:14a,22-32", "ps": "Psalm 16", "ep": "1 Peter 1:3-9", "gsp": "John 20:19-31" },
+  "A_EASTER3": { "collect": "O God, whose blessed Son made himself known to his disciples in the breaking of bread: Open the eyes of our faith, that we may behold him in all his redeeming work; who lives and reigns with you, in the unity of the Holy Spirit, one God, now and for ever. Amen.", "ot": "Acts 2:14a,36-41", "ps": "Psalm 116:1-4,12-19", "ep": "1 Peter 1:17-23", "gsp": "Luke 24:13-35" },
+  "A_EASTER4": { "collect": "O God, whose Son Jesus is the good shepherd of your people: Grant that when we hear his voice we may know him who calls us each by name, and follow where he leads; who, with you and the Holy Spirit, lives and reigns, one God, for ever and ever. Amen.", "ot": "Acts 2:42-47", "ps": "Psalm 23", "ep": "1 Peter 2:19-25", "gsp": "John 10:1-10" },
+  "A_EASTER5": { "collect": "Almighty God, whom truly to know is everlasting life: Grant us so perfectly to know your Son Jesus Christ to be the way, the truth, and the life, that we may steadfastly follow his steps in the way that leads to eternal life; through Jesus Christ your Son our Lord, who lives and reigns with you, in the unity of the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Acts 7:55-60", "ps": "Psalm 31:1-5,15-16", "ep": "1 Peter 2:2-10", "gsp": "John 14:1-14" },
+  "A_EASTER6": { "collect": "O God, you have prepared for those who love you such good things as surpass our understanding: Pour into our hearts such love towards you, that we, loving you in all things and above all things, may obtain your promises, which exceed all that we can desire; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Acts 17:22-31", "ps": "Psalm 66:8-20", "ep": "1 Peter 3:13-22", "gsp": "John 14:15-21" },
+  "A_ASCENSION": { "collect": "Grant, we pray, Almighty God, that as we believe your only-begotten Son our Lord Jesus Christ to have ascended into heaven, so we may also in heart and mind there ascend, and with him continually dwell; who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Acts 1:1-11", "ps": "Psalm 47", "ep": "Ephesians 1:15-23", "gsp": "Luke 24:44-53" },
+  "A_EASTER7":   { "collect": "O God, the King of glory, you have exalted your only Son Jesus Christ with great triumph to your kingdom in heaven: Do not leave us comfortless, but send us your Holy Spirit to strengthen us, and exalt us to that place where our Savior Christ has gone before; who lives and reigns with you and the Holy Spirit, one God, in glory everlasting. Amen.", "ot": "Acts 1:6-14", "ps": "Psalm 68:1-10,32-35", "ep": "1 Peter 4:12-14;5:6-11", "gsp": "John 17:1-11" },
+  "A_PENTECOST": { "collect": "Almighty God, on this day you opened the way of eternal life to every race and nation by the promised gift of your Holy Spirit: Shed abroad this gift throughout the world by the preaching of the Gospel, that it may reach to the ends of the earth; through Jesus Christ our Lord, who lives and reigns with you, in the unity of the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Acts 2:1-21", "ps": "Psalm 104:24-34,35b", "ep": "1 Corinthians 12:3b-13", "gsp": "John 20:19-23" },
+  "A_TRINITY":   { "collect": "Almighty and everlasting God, you have given to us your servants grace, by the confession of a true faith, to acknowledge the glory of the eternal Trinity, and in the power of your divine Majesty to worship the Unity: Keep us steadfast in this faith and worship, and bring us at last to see you in your one and eternal glory, O Father; who with the Son and the Holy Spirit live and reign, one God, for ever and ever. Amen.", "ot": "Isaiah 40:12-17,27-31", "ps": "Psalm 8", "ep": "2 Corinthians 13:11-13", "gsp": "Matthew 28:16-20" },
+  "A_PROPER2":   { "collect": "Almighty and merciful God, in your goodness keep us, we pray, from all things that may hurt us, that we, being ready both in mind and body, may accomplish with free hearts those things which belong to your purpose; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Deuteronomy 10:12-22", "ps": "Psalm 33:12-22", "ep": "Romans 3:21-28", "gsp": "Matthew 9:9-13,18-26" },
+  "A_PROPER3":   { "collect": "O Lord, make us have perpetual love and reverence for your holy Name, for you never fail to help and govern those whom you have set upon the sure foundation of your loving-kindness; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Leviticus 19:1-2,9-18", "ps": "Psalm 119:33-40", "ep": "1 Corinthians 4:1-5", "gsp": "Matthew 5:38-48" },
+  "A_PROPER4":   { "collect": "O God, your never-failing providence sets in order all things both in heaven and earth: Put away from us, we entreat you, all hurtful things, and give us those things which are profitable for us; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Genesis 6:9-22;7:24;8:14-19", "ps": "Psalm 46", "ep": "Romans 1:16-17;3:22b-28,29-31", "gsp": "Matthew 7:21-29" },
+  "A_PROPER5":   { "collect": "O God, from whom all good proceeds: Grant that by your inspiration we may think those things that are right, and by your merciful guiding may do them; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Genesis 12:1-9", "ps": "Psalm 33:1-12", "ep": "Romans 4:13-25", "gsp": "Matthew 9:9-13,18-26" },
+  "A_PROPER6":   { "collect": "Keep, O Lord, your household the Church in your steadfast faith and love, that through your grace we may proclaim your truth with boldness, and minister your justice with compassion; for the sake of our Savior Jesus Christ, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Genesis 18:1-15", "ps": "Psalm 116:1-2,12-19", "ep": "Romans 5:1-8", "gsp": "Matthew 9:35–10:8,9-23" },
+  "A_PROPER7":   { "collect": "O Lord, make us have perpetual love and reverence for your holy Name, for you never fail to help and govern those whom you have set upon the sure foundation of your loving-kindness; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Genesis 21:8-21", "ps": "Psalm 86:1-10,16-17", "ep": "Romans 6:1b-11", "gsp": "Matthew 10:24-39" },
+  "A_PROPER8":   { "collect": "Almighty God, you have built your Church upon the foundation of the apostles and prophets, Jesus Christ himself being the chief cornerstone: Grant us so to be joined together in unity of spirit by their teaching, that we may be made a holy temple acceptable to you; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Genesis 22:1-14", "ps": "Psalm 13", "ep": "Romans 6:12-23", "gsp": "Matthew 10:40-42" },
+  "A_PROPER9":   { "collect": "O God, you have taught us to keep all your commandments by loving you and our neighbor: Grant us the grace of your Holy Spirit, that we may be devoted to you with our whole heart, and united to one another with pure affection; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Genesis 24:34-38,42-49,58-67", "ps": "Psalm 45:11-18", "ep": "Romans 7:15-25a", "gsp": "Matthew 11:16-19,25-30" },
+  "A_PROPER10":  { "collect": "O Lord, mercifully receive the prayers of your people who call upon you, and grant that they may know and understand what things they ought to do, and also may have grace and power faithfully to accomplish them; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Genesis 25:19-34", "ps": "Psalm 119:105-112", "ep": "Romans 8:1-11", "gsp": "Matthew 13:1-9,18-23" },
+  "A_PROPER11":  { "collect": "Almighty God, the fountain of all wisdom, you know our necessities before we ask and our ignorance in asking: Have compassion on our weakness, and mercifully give us those things which for our unworthiness we dare not, and for our blindness we cannot ask; through the worthiness of your Son Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Genesis 28:10-19a", "ps": "Psalm 139:1-12,23-24", "ep": "Romans 8:12-25", "gsp": "Matthew 13:24-30,36-43" },
+  "A_PROPER12":  { "collect": "O God, the protector of all who trust in you, without whom nothing is strong, nothing is holy: Increase and multiply upon us your mercy; that, with you as our ruler and guide, we may so pass through things temporal, that we lose not the things eternal; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Genesis 29:15-28", "ps": "Psalm 105:1-11,45b", "ep": "Romans 8:26-39", "gsp": "Matthew 13:31-33,44-52" },
+  "A_PROPER13":  { "collect": "Let your continual mercy, O Lord, cleanse and defend your Church; and, because it cannot continue in safety without your help, protect and govern it always by your goodness; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Genesis 32:22-31", "ps": "Psalm 17:1-7,16", "ep": "Romans 9:1-5", "gsp": "Matthew 14:13-21" },
+  "A_PROPER14":  { "collect": "Grant to us, Lord, we pray, the spirit to think and do always those things that are right, that we, who cannot exist without you, may by you be enabled to live according to your will; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Genesis 37:1-4,12-28", "ps": "Psalm 105:1-6,16-22,45b", "ep": "Romans 10:5-15", "gsp": "Matthew 14:22-33" },
+  "A_PROPER15":  { "collect": "Almighty God, you have given your only Son to be for us a sacrifice for sin, and also an example of godly life: Give us grace to receive thankfully the fruits of his redeeming work, and to follow daily in the blessed steps of his most holy life; through Jesus Christ your Son our Lord, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Genesis 45:1-15", "ps": "Psalm 133", "ep": "Romans 11:1-2a,29-32", "gsp": "Matthew 15:10-28" },
+  "A_PROPER16":  { "collect": "Grant, O merciful God, that your Church, being gathered together in unity by your Holy Spirit, may show forth your power among all peoples, to the glory of your Name; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Exodus 1:8–2:10", "ps": "Psalm 124", "ep": "Romans 12:1-8", "gsp": "Matthew 16:13-20" },
+  "A_PROPER17":  { "collect": "Lord of all power and might, the author and giver of all good things: Graft in our hearts the love of your Name; increase in us true religion; nourish us with all goodness; and bring forth in us the fruit of good works; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God for ever and ever. Amen.", "ot": "Exodus 3:1-15", "ps": "Psalm 105:1-6,23-26,45c", "ep": "Romans 12:9-21", "gsp": "Matthew 16:21-28" },
+  "A_PROPER18":  { "collect": "Grant us, O Lord, to trust in you with all our hearts; for, as you always resist the proud who confide in their own strength, so you never forsake those who make their boast of your mercy; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Exodus 12:1-14", "ps": "Psalm 149", "ep": "Romans 13:8-14", "gsp": "Matthew 18:15-20" },
+  "A_PROPER19":  { "collect": "O God, because without you we are not able to please you, mercifully grant that your Holy Spirit may in all things direct and rule our hearts; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Exodus 14:19-31", "ps": "Psalm 114", "ep": "Romans 14:1-12", "gsp": "Matthew 18:21-35" },
+  "A_PROPER20":  { "collect": "Grant us, Lord, not to be anxious about earthly things, but to love things heavenly; and even now, while we are placed among things that are passing away, to hold fast to those that shall endure; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Exodus 16:2-15", "ps": "Psalm 105:1-6,37-45", "ep": "Philippians 1:21-30", "gsp": "Matthew 20:1-16" },
+  "A_PROPER21":  { "collect": "O God, you declare your almighty power chiefly in showing mercy and pity: Grant us the fullness of your grace, that we, running to obtain your promises, may become partakers of your heavenly treasure; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Exodus 17:1-7", "ps": "Psalm 78:1-4,12-16", "ep": "Philippians 2:1-13", "gsp": "Matthew 21:23-32" },
+  "A_PROPER22":  { "collect": "Almighty and everlasting God, you are always more ready to hear than we to pray, and to give more than we either desire or deserve: Pour upon us the abundance of your mercy, forgiving us those things of which our conscience is afraid, and giving us those good things for which we are not worthy to ask, except through the merits and mediation of Jesus Christ our Savior; who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Exodus 20:1-4,7-9,12-20", "ps": "Psalm 19", "ep": "Philippians 3:4b-14", "gsp": "Matthew 21:33-46" },
+  "A_PROPER23":  { "collect": "Lord, we pray that your grace may always precede and follow us, that we may continually be given to good works; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Exodus 32:1-14", "ps": "Psalm 106:1-6,19-23", "ep": "Philippians 4:1-9", "gsp": "Matthew 22:1-14" },
+  "A_PROPER24":  { "collect": "Almighty and everlasting God, in Christ you have revealed your glory among the nations: Preserve the works of your mercy, that your Church throughout the world may persevere with steadfast faith in the confession of your Name; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Exodus 33:12-23", "ps": "Psalm 99", "ep": "1 Thessalonians 1:1-10", "gsp": "Matthew 22:15-22" },
+  "A_PROPER25":  { "collect": "Almighty and everlasting God, increase in us the gifts of faith, hope, and charity; and, that we may obtain what you promise, make us love what you command; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Deuteronomy 34:1-12", "ps": "Psalm 90:1-6,13-17", "ep": "1 Thessalonians 2:1-8", "gsp": "Matthew 22:34-46" },
+  "A_PROPER26":  { "collect": "Almighty and merciful God, it is only by your gift that your faithful people offer you true and laudable service: Grant that we may run without stumbling to obtain your heavenly promises; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Joshua 3:7-17", "ps": "Psalm 107:1-7,33-37", "ep": "1 Thessalonians 2:9-13", "gsp": "Matthew 23:1-12" },
+  "A_PROPER27":  { "collect": "O God, whose blessed Son came into the world that he might destroy the works of the devil and make us children of God and heirs of eternal life: Grant that, having this hope, we may purify ourselves as he is pure; that, when he comes again with power and great glory, we may be made like him in his eternal and glorious kingdom; where he lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Joshua 24:1-3a,14-25", "ps": "Psalm 78:1-7", "ep": "1 Thessalonians 4:13-18", "gsp": "Matthew 25:1-13" },
+  "A_PROPER28":  { "collect": "Blessed Lord, who caused all holy Scriptures to be written for our learning: Grant us so to hear them, read, mark, learn, and inwardly digest them, that we may embrace and ever hold fast the blessed hope of everlasting life, which you have given us in our Savior Jesus Christ; who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Judges 4:1-7", "ps": "Psalm 123", "ep": "1 Thessalonians 5:1-11", "gsp": "Matthew 25:14-30" },
+  "A_PROPER29":  { "collect": "Almighty and everlasting God, whose will it is to restore all things in your well-beloved Son, the King of kings and Lord of lords: Mercifully grant that the peoples of the earth, divided and enslaved by sin, may be freed and brought together under his most gracious rule; who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Ezekiel 34:11-16,20-24", "ps": "Psalm 100", "ep": "Ephesians 1:15-23", "gsp": "Matthew 25:31-46" },
+  "A_ADVENT1":   { "collect": "Almighty God, give us grace to cast away the works of darkness, and put on the armor of light, now in the time of this mortal life in which your Son Jesus Christ came to visit us in great humility; that in the last day, when he shall come again in his glorious majesty to judge both the living and the dead, we may rise to the life immortal; through him who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Isaiah 2:1-5", "ps": "Psalm 122", "ep": "Romans 13:11-14", "gsp": "Matthew 24:36-44" },
+  "A_ADVENT2":   { "collect": "Merciful God, who sent your messengers the prophets to preach repentance and prepare the way for our salvation: Give us grace to heed their warnings and forsake our sins, that we may greet with joy the coming of Jesus Christ our Redeemer; who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Isaiah 11:1-10", "ps": "Psalm 72:1-7,18-19", "ep": "Romans 15:4-13", "gsp": "Matthew 3:1-12" },
+  "A_ADVENT3":   { "collect": "Stir up your power, O Lord, and with great might come among us; and, because we are sorely hindered by our sins, let your bountiful grace and mercy speedily help and deliver us; through Jesus Christ our Lord, to whom, with you and the Holy Spirit, be honor and glory, now and for ever. Amen.", "ot": "Isaiah 35:1-10", "ps": "Luke 1:47-55", "ep": "James 5:7-10", "gsp": "Matthew 11:2-11" },
+  "A_ADVENT4":   { "collect": "Purify our conscience, Almighty God, by your daily visitation, that your Son Jesus Christ, at his coming, may find in us a mansion prepared for himself; who lives and reigns with you, in the unity of the Holy Spirit, one God, now and for ever. Amen.", "ot": "Isaiah 7:10-16", "ps": "Psalm 80:1-7,17-19", "ep": "Romans 1:1-7", "gsp": "Matthew 1:18-25" },
+  "A_CHRISTMAS": { "collect": "O God, you have caused this holy night to shine with the brightness of the true Light: Grant that we, who have known the mystery of that Light on earth, may also enjoy him perfectly in heaven; where with you and the Holy Spirit he lives and reigns, one God, in glory everlasting. Amen.", "ot": "Isaiah 9:2-7", "ps": "Psalm 96", "ep": "Titus 2:11-14", "gsp": "Luke 2:1-14,15-20" },
+  "A_XMAS1":     { "collect": "Almighty God, you have poured upon us the new light of your incarnate Word: Grant that this light, enkindled in our hearts, may shine forth in our lives; through Jesus Christ our Lord, who lives and reigns with you, in the unity of the Holy Spirit, one God, now and for ever. Amen.", "ot": "Isaiah 63:7-9", "ps": "Psalm 148", "ep": "Hebrews 2:10-18", "gsp": "Matthew 2:13-23" },
+  "A_XMAS2":     { "collect": "O God, who wonderfully created, and yet more wonderfully restored, the dignity of human nature: Grant that we may share the divine life of him who humbled himself to share our humanity, your Son Jesus Christ; who lives and reigns with you, in the unity of the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Jeremiah 31:7-14", "ps": "Psalm 147:13-21", "ep": "Ephesians 1:3-14", "gsp": "John 1:1-18" },
+  "A_BAPTISM_LORD": { "collect": "Father in heaven, who at the baptism of Jesus in the River Jordan proclaimed him your beloved Son and anointed him with the Holy Spirit: Grant that all who are baptized into his Name may keep the covenant they have made, and boldly confess him as Lord and Savior; who with you and the Holy Spirit lives and reigns, one God, in glory everlasting. Amen.", "ot": "Isaiah 42:1-9", "ps": "Psalm 29", "ep": "Acts 10:34-43", "gsp": "Matthew 3:13-17" },
+  "B_ADVENT1":   { "collect": "Almighty God, give us grace to cast away the works of darkness, and put on the armor of light, now in the time of this mortal life in which your Son Jesus Christ came to visit us in great humility; that in the last day, when he shall come again in his glorious majesty to judge both the living and the dead, we may rise to the life immortal; through him who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Isaiah 64:1-9", "ps": "Psalm 80:1-7,17-19", "ep": "1 Corinthians 1:3-9", "gsp": "Mark 13:24-37" },
+  "B_ADVENT2":   { "collect": "Merciful God, who sent your messengers the prophets to preach repentance and prepare the way for our salvation: Give us grace to heed their warnings and forsake our sins, that we may greet with joy the coming of Jesus Christ our Redeemer; who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Isaiah 40:1-11", "ps": "Psalm 85:1-2,8-13", "ep": "2 Peter 3:8-15a", "gsp": "Mark 1:1-8" },
+  "B_ADVENT3":   { "collect": "Stir up your power, O Lord, and with great might come among us; and, because we are sorely hindered by our sins, let your bountiful grace and mercy speedily help and deliver us; through Jesus Christ our Lord, to whom, with you and the Holy Spirit, be honor and glory, now and for ever. Amen.", "ot": "Isaiah 61:1-4,8-11", "ps": "Psalm 126", "ep": "1 Thessalonians 5:16-24", "gsp": "John 1:6-8,19-28" },
+  "B_ADVENT4":   { "collect": "Purify our conscience, Almighty God, by your daily visitation, that your Son Jesus Christ, at his coming, may find in us a mansion prepared for himself; who lives and reigns with you, in the unity of the Holy Spirit, one God, now and for ever. Amen.", "ot": "2 Samuel 7:1-11,16", "ps": "Luke 1:47-55", "ep": "Romans 16:25-27", "gsp": "Luke 1:26-38" },
+  "B_CHRISTMAS": { "collect": "O God, you have caused this holy night to shine with the brightness of the true Light: Grant that we, who have known the mystery of that Light on earth, may also enjoy him perfectly in heaven; where with you and the Holy Spirit he lives and reigns, one God, in glory everlasting. Amen.", "ot": "Isaiah 9:2-7", "ps": "Psalm 96", "ep": "Titus 2:11-14", "gsp": "Luke 2:1-14,15-20" },
+  "C_LENT1":  { "collect": "Almighty God, whose blessed Son was led by the Spirit to be tempted by Satan: Come quickly to help us who are assaulted by many temptations; and, as you know the weaknesses of each of us, let each one find you mighty to save; through Jesus Christ your Son our Lord, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Deuteronomy 26:1-11", "ps": "Psalm 91:1-2,9-16", "ep": "Romans 10:8b-13", "gsp": "Luke 4:1-13" },
+  "C_LENT2":  { "collect": "O God, whose glory it is always to have mercy: Be gracious to all who have gone astray from your ways, and bring them again with penitent hearts and steadfast faith to embrace and hold fast the unchangeable truth of your Word, Jesus Christ your Son; who with you and the Holy Spirit lives and reigns, one God, for ever and ever. Amen.", "ot": "Genesis 15:1-12,17-18", "ps": "Psalm 27", "ep": "Philippians 3:17–4:1", "gsp": "Luke 13:31-35" },
+  "C_LENT3":  { "collect": "Almighty God, you know that we have no power in ourselves to help ourselves: Keep us both outwardly in our bodies and inwardly in our souls, that we may be defended from all adversities which may happen to the body, and from all evil thoughts which may assault and hurt the soul; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Isaiah 55:1-9", "ps": "Psalm 63:1-8", "ep": "1 Corinthians 10:1-13", "gsp": "Luke 13:1-9" },
+  "C_LENT4":  { "collect": "Gracious Father, whose blessed Son Jesus Christ came down from heaven to be the true bread which gives life to the world: Evermore give us this bread, that he may live in us, and we in him; who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Joshua 5:9-12", "ps": "Psalm 32", "ep": "2 Corinthians 5:16-21", "gsp": "Luke 15:1-3,11b-32" },
+  "C_LENT5":  { "collect": "Almighty God, you alone can bring into order the unruly wills and affections of sinners: Grant your people grace to love what you command and desire what you promise; that, among the swift and varied changes of the world, our hearts may surely there be fixed where true joys are to be found; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, now and for ever. Amen.", "ot": "Isaiah 43:16-21", "ps": "Psalm 126", "ep": "Philippians 3:4b-14", "gsp": "John 12:1-8" },
+  "C_PALM":   { "collect": "Almighty and everliving God, in your tender love for the human race you sent your Son our Savior Jesus Christ to take upon him our nature, and to suffer death upon the cross, giving us the example of his great humility: Mercifully grant that we may walk in the way of his suffering, and also share in his resurrection; through Jesus Christ our Lord, who lives and reigns with you and the Holy Spirit, one God, for ever and ever. Amen.", "ot": "Isaiah 50:4-9a", "ps": "Psalm 31:9-16", "ep": "Philippians 2:5-11", "gsp": "Luke 22:14–23:56" }
+}
+</script>
+</body>
+</html>
