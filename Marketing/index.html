@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ordo — The Full Production Dashboard for Liturgical Churches</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="theme-dark">
+
+    <!-- NAVIGATION -->
+    <nav class="nav-light">
+        <div class="nav-container">
+            <div class="flex items-center gap-2">
+                <div class="logo text-dark">Ordo</div>
+            </div>
+            <div class="nav-links hidden-mobile">
+                <a href="#features" class="text-dark font-semibold text-xs tracking-widest uppercase hover-opacity">Docs</a>
+                <a href="#about" class="text-dark font-semibold text-xs tracking-widest uppercase hover-opacity">Blog</a>
+            </div>
+            <div class="nav-actions">
+                <a href="#signin" class="text-dark font-semibold text-xs tracking-widest uppercase mr-4 hover-opacity">App</a>
+                <a href="#getstarted" class="btn btn-accent btn-small px-6 py-2 rounded-sm text-xs font-bold tracking-widest uppercase">GET A DEMO</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- NEW LIGHT EDITORIAL HERO -->
+    <section class="hero-section light-section pt-40 pb-0 relative overflow-hidden" style="padding-top: 12rem;">
+        <!-- Liturgical Season Context (Red for Palm Sunday matching the mockup) -->
+        <div class="liturgical-glow-container">
+            <div class="liturgical-glow-red"></div>
+        </div>
+        <div class="container relative z-10">
+            <div class="hero-split grid-2 gap-16 items-center">
+                <div class="hero-left">
+                    <h1 class="font-manrope text-dark leading-none tracking-tight font-medium" style="font-size: 5.5rem; letter-spacing: -0.06em; line-height: 1;">
+                        The production<br>dashboard for<br>liturgical churches.
+                    </h1>
+                </div>
+                <div class="hero-right flex flex-col justify-center pl-8 pt-4">
+                    <p class="text-lg text-dark-muted mb-8 leading-relaxed font-body" style="font-size: 1.15rem;">
+                        Ordo is the production dashboard built for liturgical church teams — full order of service, wireless mic assignments, stage inputs, production notes, and liturgical calendar, organized and ready before the first cue.
+                    </p>
+                    <div class="btn-group justify-start mt-8">
+                        <a href="#getstarted" class="btn btn-accent">GET A DEMO <span class="arrow">↗</span></a>
+                        <a href="#demo" class="btn btn-secondary">SIGN UP FOR FREE <span class="arrow">↗</span></a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trusted By Band -->
+            <div class="trusted-band mt-32 flex items-center justify-between pb-12" style="margin-top: 8rem; border-bottom: 1px solid rgba(0,0,0,0.08); padding-bottom: 3rem;">
+                <span class="text-sm font-body text-dark-muted w-48 leading-tight font-medium">Trusted by the best<br>leading churches:</span>
+                <div class="logos flex gap-12 text-2xl font-manrope font-bold text-dark-muted opacity-30 items-center justify-end flex-1" style="opacity: 0.3; justify-content: flex-end; gap: 3rem; font-size: 1.5rem; flex: 1; align-items: center; display: flex;">
+                    <span>Christ Church</span>
+                    <span>Grace Anglican</span>
+                    <span>Holy Trinity</span>
+                    <span>Redeemer</span>
+                </div>
+            </div>
+            
+            <!-- Dashboard Full-Bleed Graphic -->
+            <div class="hero-graphic-bleed cathedral-bg mt-16 relative">
+                <div class="cathedral-overlay"></div>
+                <!-- Dashboard Mockup Graphic -->
+                <div class="hero-mockup-wrapper fade-in-up relative z-10" style="max-width: 1000px; margin: 0 auto;">
+                <div class="app-window mx-auto" style="box-shadow: 0 40px 100px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);">
+                    <div class="app-sidebar hidden-mobile">
+                        <div class="app-sidebar-header">
+                            <strong>Christ Church Anglican GR</strong>
+                            <span class="text-xs mt-1 block tracking-widest text-dark-muted">SOUND PRODUCTION</span>
+                        </div>
+                        <div class="app-nav">
+                            <div class="nav-item active">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                                RUN SHEET
+                            </div>
+                        </div>
+                        <div class="app-sidebar-footer">
+                            <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> SETTINGS</div>
+                            <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> LOCK</div>
+                        </div>
+                    </div>
+                    <div class="app-main">
+                        <div class="app-header">
+                            <div class="header-title">SOUND PRODUCTION</div>
+                            <div class="header-meta hidden-mobile">
+                                MARCH 29, 2026<span style="margin: 0 0.75rem;">·</span>8:37 PM<span style="margin: 0 0.75rem;">·</span><span class="dot-red"></span> PALM SUNDAY
+                            </div>
+                            <div class="header-action">Edit</div>
+                        </div>
+                        <div class="app-content">
+                            <div class="content-section">
+                                <div class="section-label">WIRELESS MICROPHONES</div>
+                                <div class="mic-grid">
+                                    <div class="mic-card">
+                                        <div class="mic-card-header">HEADSET 1 · CLERGY</div>
+                                        <div class="mic-line"></div>
+                                    </div>
+                                    <div class="mic-card">
+                                        <div class="mic-card-header">HEADSET 2 · CLERGY</div>
+                                        <div class="mic-line"></div>
+                                    </div>
+                                    <div class="mic-card">
+                                        <div class="mic-card-header">WIRELESS 1 · PODIUM</div>
+                                        <div class="mic-line"></div>
+                                    </div>
+                                    <div class="mic-card">
+                                        <div class="mic-card-header">WIRELESS 2 · ANNOUNCEMENTS</div>
+                                        <div class="mic-line"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="content-section hidden-mobile">
+                                <div class="section-label">STAGE INPUTS — 7 INPUTS</div>
+                                <div class="input-table">
+                                     <div class="input-row header">
+                                         <span>INPUT</span><span>LOCATION</span><span>INSTRUMENT / ROLE</span><span>MUSICIAN</span><span>ROUTING</span>
+                                     </div>
+                                     <div class="input-row">
+                                         <span class="input-num">01</span>
+                                         <div class="input-cell-box uppercase">PIANO</div>
+                                         <div class="input-cell-box font-semibold">Lead Vocals</div>
+                                         <div class="input-cell-box italic text-dark-muted">Unassigned</div>
+                                         <div class="input-cell-box">—</div>
+                                     </div>
+                                     <div class="input-row">
+                                         <span class="input-num">02</span>
+                                         <div class="input-cell-box uppercase">STAGE LEFT</div>
+                                         <div class="input-cell-box italic text-dark-muted">Not set</div>
+                                         <div class="input-cell-box italic text-dark-muted">Unassigned</div>
+                                         <div class="input-cell-box">—</div>
+                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROBLEM SECTION -->
+    <section class="problem-section light-section border-top section-padding override-bottom-padding">
+        <div class="container relative z-10">
+            <div class="grid-2 gap-12 items-center">
+                <div>
+                    <h2 class="font-manrope text-dark tracking-tight leading-tight" style="font-size: 3.5rem;">The paper order of service<br>has had a good run.</h2>
+                    <p class="text-lg text-dark-muted mt-6 max-w-lg">
+                        Coffee-stained. Scribbled over. Updated by the wrong person the night before. Passed around in a group chat no one can find at 8:45 AM.
+                    </p>
+                    <p class="text-lg text-dark-muted mt-4 max-w-lg">
+                        Your production team is skilled. They deserve tooling that matches.
+                    </p>
+                </div>
+                <div class="problem-visuals hidden-mobile">
+                    <div class="visual-box visual-box-1" style="background: #ffffff; color: var(--text-dark); border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 1.5rem; border-radius: 8px;">
+                        <span class="font-semibold text-sm tracking-widest uppercase">Run Sheet v4_FINAL_real.pdf</span>
+                    </div>
+                    <div class="visual-box visual-box-2" style="background: #fdfdf9; color: var(--text-dark-muted); border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.05); padding: 1.5rem; border-radius: 8px;">
+                        <span class="text-sm">Group Chat: "Did we change the mic?"</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LIGHT SECTION: BENTO GRID (FEATURES) -->
+    <section id="features" class="bento-section light-section border-top section-padding-xl">
+        <div class="container">
+            <div class="text-center mb-16">
+                <span class="text-xs font-semibold tracking-widest uppercase text-dark-muted">Introducing Ordo</span>
+                <h2 class="font-manrope text-dark mt-4 tracking-tight leading-tight" style="font-size: 3.5rem;">One organized place for everything your team needs to know.</h2>
+                <p class="text-lg text-dark-muted mt-4 mx-auto max-w-lg">
+                    Ordo is the full production dashboard built around the specific rhythms of the liturgical service. The complete order of service, wireless mic assignments, stage inputs, production notes, and liturgical calendar — all in a single, immaculately organized interface.
+                </p>
+            </div>
+
+            <div class="bento-grid">
+                <!-- Large Card -->
+                <div class="bento-col-span-2 bento-card-light">
+                    <div class="bento-content">
+                        <h3 class="font-manrope text-dark tracking-tight text-3xl">Your service, sequenced and production-ready.</h3>
+                        <p>Ordo is the complete picture of Sunday morning — order of service, wireless mic assignments, stage inputs, musician roles, and production cues, all organized in one clean, editable view that's live for every team member the moment you save.</p>
+                    </div>
+                    <div class="bento-graphic graphic-bottom">
+                         <div class="mockup-row-ui">
+                             <span class="tag">09:00 AM</span>
+                             <span class="title">Processional Hymn</span>
+                             <span class="tag-outline">All Mics Live</span>
+                         </div>
+                         <div class="mockup-row-ui">
+                             <span class="tag">09:05 AM</span>
+                             <span class="title">Collect of Purity</span>
+                             <span class="tag-outline">Mic 1 Only</span>
+                         </div>
+                    </div>
+                </div>
+
+                <!-- Small Cards -->
+                <div class="bento-card-light">
+                    <div class="bento-content">
+                        <span class="badge-accent">Wireless Microphones</span>
+                        <h3 class="font-manrope text-dark tracking-tight text-2xl mt-4">Every mic accounted for.</h3>
+                        <p>Assign each wireless channel to a person and a role. Headsets, handhelds, lavalieres — tracked by name, not by memory.</p>
+                    </div>
+                </div>
+
+                <div class="bento-card-light">
+                    <div class="bento-content">
+                        <span class="badge-accent">Stage Inputs</span>
+                        <h3 class="font-manrope text-dark tracking-tight text-2xl mt-4">The board, mapped.</h3>
+                        <p>Log every instrument, musician, and routing assignment for the service in a clean, scannable reference.</p>
+                    </div>
+                </div>
+
+                 <div class="bento-card-light">
+                    <div class="bento-content">
+                        <span class="badge-accent">Planning Center</span>
+                        <h3 class="font-manrope text-dark tracking-tight text-2xl mt-4">Your plan, imported.</h3>
+                        <p>Import your order of service and team assignments directly — dashboard built before you touch the board.</p>
+                    </div>
+                </div>
+
+                 <div class="bento-card-light">
+                    <div class="bento-content">
+                        <span class="badge-accent">Liturgical Calendar</span>
+                        <h3 class="font-manrope text-dark tracking-tight text-2xl mt-4">Always in season.</h3>
+                        <p>Ordo displays the current liturgical season so your team is oriented within the church calendar automatically.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LIGHT SECTION: PRAYER BOOK INTEGRATION -->
+    <section id="prayer-book" class="liturgy-section light-section border-top section-padding-xl relative overflow-hidden">
+        <div class="container">
+            <div class="text-center mb-16">
+                <span class="text-xs font-semibold tracking-widest uppercase text-dark-muted">Liturgical Intelligence</span>
+                <h2 class="font-manrope text-dark mt-4 tracking-tight leading-tight" style="font-size: 3.5rem;">Built around the book you use.</h2>
+                <p class="text-lg text-dark-muted mt-4 mx-auto max-w-lg">
+                    Ordo doesn't just know the season—it knows the rubrics. Select your tradition during setup to automatically align your dashboard with the correct lectionary, proper texts, and service templates.
+                </p>
+            </div>
+
+            <!-- 2x2 Feature Grid -->
+            <div class="grid-2 gap-12 mt-16 mx-auto" style="max-width: 900px;">
+                <div class="flex flex-col">
+                    <h4 class="font-manrope text-dark tracking-tight text-2xl font-bold">Structured by tradition.</h4>
+                    <p class="text-dark-muted mt-2">Service templates know their own structure. A Sunday Eucharist maps directly to the run sheet with the correct liturgical sequence and naming.</p>
+                </div>
+                <div class="flex flex-col">
+                    <h4 class="font-manrope text-dark tracking-tight text-2xl font-bold">The Collect of the Day.</h4>
+                    <p class="text-dark-muted mt-2">The correct Collect flows directly from the lectionary to the dashboard. The production team can follow exactly what is being prayed, exactly when it happens.</p>
+                </div>
+                <div class="flex flex-col">
+                    <h4 class="font-manrope text-dark tracking-tight text-2xl font-bold">Integrated lectionary.</h4>
+                    <p class="text-dark-muted mt-2">The Old Testament, Psalm, Epistle, and Gospel display automatically for each service. The team knows the passage, the reader, and the required microphones.</p>
+                </div>
+                <div class="flex flex-col">
+                    <h4 class="font-manrope text-dark tracking-tight text-2xl font-bold">Canticles and propers.</h4>
+                    <p class="text-dark-muted mt-2">When the calendar dictates specific canticles or proper texts for Morning and Evening Prayer, Ordo pre-populates the correct music items.</p>
+                </div>
+            </div>
+
+            <!-- Supported Traditions Table -->
+            <div class="mt-20 pt-16 border-top">
+                <h4 class="text-xs font-semibold tracking-widest uppercase text-dark-muted mb-8 text-center text-dark">Supported Traditions</h4>
+                <div class="grid-3 text-center">
+                    
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">BCP 2019</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">ACNA Anglican</p>
+                    </div>
+                    
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">BCP 1979</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">TEC Episcopal</p>
+                    </div>
+                    
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">BCP 1662</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">Traditional Anglican</p>
+                    </div>
+
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">Roman Missal (OF)</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">Catholic</p>
+                    </div>
+
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">APBA</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">Anglican Church of Australia</p>
+                    </div>
+
+                    <div style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 1.5rem; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+                        <h4 class="font-bold text-dark text-lg tracking-tight">BAS</h4>
+                        <p class="text-xs uppercase tracking-widest text-dark-muted mt-1 font-semibold">Anglican Church of Canada</p>
+                    </div>
+                    
+                </div>
+            </div>
+            
+        </div>
+    </section>
+
+    <!-- LIGHT SECTION: Huge Number & Social Proof -->
+    <section class="social-proof-section light-section border-top section-padding-xl">
+        <div class="container">
+            <div class="grid-2 gap-16 items-center flex-mobile-reverse">
+                <div>
+                    <h2 class="font-manrope text-dark tracking-tight leading-tight" style="font-size: 4rem;">Trusted by teams who take Sunday morning seriously.</h2>
+                    <div class="testimonial-dark-quote mt-8" style="border-left-color: var(--accent);">
+                        <p class="text-xl text-dark-muted italic">"Because of Ordo, our sound engineers and production volunteers are completely synced without saying a word. We're spending our mornings tuning the mix, not hunting down the run sheet."</p>
+                        <div class="mt-6 font-semibold text-dark tracking-widest text-sm uppercase">David T.</div>
+                        <div class="text-xs text-dark-muted uppercase tracking-widest">Production Director &middot; St. Jude's Parish</div>
+                    </div>
+                </div>
+                <div class="huge-number-wrapper text-right-desktop">
+                    <div class="font-manrope text-dark tracking-tight leading-none" style="font-size: 8rem;">100<span class="text-dark-muted" style="font-size: 4rem;">%</span></div>
+                    <p class="text-xl font-medium mt-4 text-dark">Clarity before the service.<br>Calm during it.</p>
+                    <p class="text-sm text-dark-muted mt-2">Every mic assigned. Every input mapped.<br>Every cue noted. Ready.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- LIGHT SECTION: TECH / HOW IT WORKS -->
+    <section id="how-it-works" class="tech-section light-section border-top section-padding-xl relative overflow-hidden">
+        <div class="container relative z-10 text-center">
+            <h2 class="font-manrope text-dark tracking-tight leading-tight" style="font-size: 3.5rem;">Designed for the environment<br>you're actually working in.</h2>
+            <p class="text-lg text-dark-muted mt-6 max-w-xl mx-auto">
+                Most production tools are built for stadium tours, broadcast studios, or modern concert-style worship. They throw endless settings at you when all you need is clarity. Ordo is designed specifically for the traditional church—reducing the noise and cognitive load of a high-pressure live environment. The result is an interface that feels unhurried, even when the service isn't.
+            </p>
+
+            <div class="setup-grid mt-20">
+                <div class="setup-step text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.02);">
+                    <div class="font-manrope text-dark opacity-30 text-3xl font-bold">01</div>
+                    <h4 class="text-dark mt-4 font-bold text-lg tracking-tight">Create account</h4>
+                    <p class="text-sm text-dark-muted mt-2">Sign in with your email.</p>
+                </div>
+                <div class="setup-step text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.02);">
+                    <div class="font-manrope text-dark opacity-30 text-3xl font-bold">02</div>
+                    <h4 class="text-dark mt-4 font-bold text-lg tracking-tight">Name church</h4>
+                    <p class="text-sm text-dark-muted mt-2">Dashboard auto-configured.</p>
+                </div>
+                <div class="setup-step text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.02);">
+                    <div class="font-manrope text-dark opacity-30 text-3xl font-bold">03</div>
+                    <h4 class="text-dark mt-4 font-bold text-lg tracking-tight">Import Plan</h4>
+                    <p class="text-sm text-dark-muted mt-2">Connect Planning Center.</p>
+                </div>
+                <div class="setup-step text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.02);">
+                    <div class="font-manrope text-dark opacity-30 text-3xl font-bold">04</div>
+                    <h4 class="text-dark mt-4 font-bold text-lg tracking-tight">Build board</h4>
+                    <p class="text-sm text-dark-muted mt-2">Mics, inputs, roles.</p>
+                </div>
+                 <div class="setup-step text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); box-shadow: 0 10px 30px rgba(0,0,0,0.02);">
+                    <div class="font-manrope text-dark opacity-30 text-3xl font-bold">05</div>
+                    <h4 class="text-dark mt-4 font-bold text-lg tracking-tight">Go live</h4>
+                    <p class="text-sm text-dark-muted mt-2">Real-time sync for everyone.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER CTA -->
+    <section class="footer-cta-section light-section border-top section-padding-xl relative overflow-hidden">
+        <div class="container relative z-10 grid-2 gap-12 items-center">
+            <div>
+                <h1 class="font-manrope text-dark tracking-tight leading-tight font-medium" style="font-size: 4rem;">The board is set.<br>Let's begin.</h1>
+                <div class="btn-group mt-8 justify-start">
+                    <a href="#getstarted" class="btn btn-accent">GET A DEMO <span class="arrow">↗</span></a>
+                </div>
+            </div>
+            
+            <div class="pricing-cards ml-auto">
+                <div class="text-left" style="background: #ffffff; border: 1px solid var(--bg-light-border); padding: 3rem; border-radius: 8px; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+                    <h4 class="text-dark-muted text-xs uppercase tracking-widest font-semibold">Pricing</h4>
+                    <div class="font-manrope text-dark mt-4 leading-none" style="font-size: 4.5rem; font-weight: 300;">$0 <span class="text-sm text-dark-muted font-body">to start</span></div>
+                    <p class="text-sm text-dark-muted mt-6 border-top pt-4">No credit card required. Set up in 5 minutes.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="light-footer border-top">
+        <div class="container py-8 flex justify-between items-center footer-mobile-stack">
+            <div class="flex items-center gap-4">
+                <div class="logo text-lg text-dark">Ordo</div>
+                <div class="text-xs text-dark-muted">&copy; 2026. Built for production teams.</div>
+            </div>
+            <div class="flex gap-6 text-xs text-dark font-semibold tracking-widest uppercase">
+                <a href="#features" class="text-dark text-decoration-none hover-opacity">Features</a>
+                <a href="#signin" class="text-dark text-decoration-none hover-opacity">Sign in</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Intersection observer for fading
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.1 };
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in-up').forEach((el) => observer.observe(el));
+    </script>
+</body>
+</html>
